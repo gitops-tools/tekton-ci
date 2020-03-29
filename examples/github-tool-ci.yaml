@@ -1,0 +1,25 @@
+image: golang:latest
+
+before_script:
+  - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.24.0
+
+stages:
+  - test
+  - build
+
+format:
+  stage: test
+  script:
+    - go mod download
+    - go fmt ./...
+    - go vet ./...
+    - ./bin/golangci-lint run
+    - go test -race ./...
+
+compile:
+  stage: build
+  script:
+    - go build -race -ldflags "-extldflags '-static'" -o testing ./cmd/github-tool
+  artifacts:
+    paths:
+      - github-tool
