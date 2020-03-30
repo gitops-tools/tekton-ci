@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	gitCloneTaskName    = "git-clone"
-	beforeStepTaskName  = "before-step"
-	workspaceName       = "git-checkout"
-	persistentClaimName = "shared-task-storage"
-	workspaceSourcePath = "$(workspaces.source.path)"
+	gitCloneTaskName     = "git-clone"
+	beforeStepTaskName   = "before-step"
+	workspaceName        = "git-checkout"
+	persistentClaimName  = "shared-task-storage"
+	workspaceBindingName = "source"
+	workspaceSourcePath  = "$(workspaces.source.path)"
 )
 
 type Source struct {
@@ -21,15 +22,10 @@ type Source struct {
 	Ref     string
 }
 
-func makeEnv(m map[string]string) []corev1.EnvVar {
-	vars := []corev1.EnvVar{}
-	for k, v := range m {
-		vars = append(vars, corev1.EnvVar{Name: k, Value: v})
-	}
-	vars = append(vars, corev1.EnvVar{Name: "CI_PROJECT_DIR", Value: workspaceSourcePath})
-	return vars
-}
-
+// Convert takes a Pipelined definition, a name and source, and generates a
+// TektonCD PipelineRun with an embedded Pipeline with the tasks to execute.
+//
+// TODO: allow passing in of the persistentClaimName.
 func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.PipelineRun {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
@@ -126,7 +122,7 @@ func makeScriptSteps(env []corev1.EnvVar, image string, commands []string) []pip
 func workspacePipelineTaskBindings() []pipelinev1.WorkspacePipelineTaskBinding {
 	return []pipelinev1.WorkspacePipelineTaskBinding{
 		pipelinev1.WorkspacePipelineTaskBinding{
-			Name:      "source",
+			Name:      workspaceBindingName,
 			Workspace: workspaceName,
 		},
 	}
@@ -136,9 +132,18 @@ func makeTaskSpec(steps ...pipelinev1.Step) *pipelinev1.TaskSpec {
 	return &pipelinev1.TaskSpec{
 		Workspaces: []pipelinev1.WorkspaceDeclaration{
 			pipelinev1.WorkspaceDeclaration{
-				Name: "source",
+				Name: workspaceBindingName,
 			},
 		},
 		Steps: steps,
 	}
+}
+
+func makeEnv(m map[string]string) []corev1.EnvVar {
+	vars := []corev1.EnvVar{}
+	for k, v := range m {
+		vars = append(vars, corev1.EnvVar{Name: k, Value: v})
+	}
+	vars = append(vars, corev1.EnvVar{Name: "CI_PROJECT_DIR", Value: workspaceSourcePath})
+	return vars
 }

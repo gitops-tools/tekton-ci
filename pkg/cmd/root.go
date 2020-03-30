@@ -19,30 +19,36 @@ func init() {
 		"",
 		"YAML with pipeline description",
 	)
-	rootCmd.MarkFlagRequired("pipeline-file")
-	viper.BindPFlag("pipeline-file", rootCmd.Flags().Lookup("pipeline-file"))
+	logIfError(rootCmd.MarkFlagRequired("pipeline-file"))
+	logIfError(viper.BindPFlag("pipeline-file", rootCmd.Flags().Lookup("pipeline-file")))
 	rootCmd.Flags().String(
 		"pipelinerun-name",
 		"test-pipelinerun",
 		"inserted into the generated PipelineRun resource",
 	)
-	viper.BindPFlag("pipelinerun-name", rootCmd.Flags().Lookup("pipelinerun-name"))
+	logIfError(viper.BindPFlag("pipelinerun-name", rootCmd.Flags().Lookup("pipelinerun-name")))
 	rootCmd.Flags().String(
 		"repository-url",
 		"",
 		"e.g. https://github.com/my-org/my-repo.git",
 	)
-	viper.BindPFlag("repository-url", rootCmd.Flags().Lookup("repository-url"))
-	rootCmd.MarkFlagRequired("repository-url")
+	logIfError(viper.BindPFlag("repository-url", rootCmd.Flags().Lookup("repository-url")))
+	logIfError(rootCmd.MarkFlagRequired("repository-url"))
 	rootCmd.Flags().String(
 		"branch",
 		"master",
 		"checkout and execute against this branch",
 	)
-	viper.BindPFlag("branch", rootCmd.Flags().Lookup("branch"))
-	rootCmd.MarkFlagRequired("branch")
+	logIfError(viper.BindPFlag("branch", rootCmd.Flags().Lookup("branch")))
+	logIfError(rootCmd.MarkFlagRequired("branch"))
 
 	cobra.OnInitialize(initConfig)
+}
+
+func logIfError(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
 }
 
 var rootCmd = &cobra.Command{
