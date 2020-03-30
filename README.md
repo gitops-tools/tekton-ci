@@ -75,5 +75,7 @@ compile:
 ## Things to do
 
  * Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)
- * Support more syntax items
+ * Support more syntax items (extra containers, do something with artifacts).
  * Provide support for calling other Tekton tasks.
+ * Support for service-broker bindings
+ * HTTP hook endpoint to trigger pipelineruns automatically
