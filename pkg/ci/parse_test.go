@@ -18,8 +18,8 @@ func TestParse(t *testing.T) {
 		{"testdata/after-script-example.yaml", &Pipeline{
 			Image:       "golang:latest",
 			AfterScript: []string{`echo "testing"`},
-			Jobs: []*Job{
-				&Job{Name: "format",
+			Tasks: []*Task{
+				&Task{Name: "format",
 					Stage:  "test",
 					Script: []string{`echo "testing"`},
 				},
@@ -51,7 +51,7 @@ func TestParseBadFiles(t *testing.T) {
 		filename string
 		errMsg   string
 	}{
-		{"testdata/bad-job-no-script.yaml", `invalid job "format" missing script`},
+		{"testdata/bad-task-no-script.yaml", `invalid task "format" missing script`},
 	}
 
 	for _, tt := range parseTests {

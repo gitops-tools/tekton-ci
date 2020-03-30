@@ -7,20 +7,20 @@ type Pipeline struct {
 	BeforeScript []string
 	AfterScript  []string
 	Stages       []string
-	Jobs         []*Job
+	Tasks        []*Task
 }
 
-// Job represents the parsed Job from the Pipeline.
-type Job struct {
+// Task represents the parsed Task from the Pipeline.
+type Task struct {
 	Name   string
 	Stage  string
 	Script []string
 }
 
-// JobsForStage returns the named jobs for a specific stage.
-func (c Pipeline) JobsForStage(n string) []string {
+// TasksForStage returns the named jobs for a specific stage.
+func (c Pipeline) TasksForStage(n string) []string {
 	s := []string{}
-	for _, j := range c.Jobs {
+	for _, j := range c.Tasks {
 		if j.Stage == n {
 			s = append(s, j.Name)
 		}
@@ -28,9 +28,9 @@ func (c Pipeline) JobsForStage(n string) []string {
 	return s
 }
 
-// Job returns the named job or nil if it exists
-func (c Pipeline) Job(n string) *Job {
-	for _, j := range c.Jobs {
+// Task returns the named job or nil if it exists
+func (c Pipeline) Task(n string) *Task {
+	for _, j := range c.Tasks {
 		if n == j.Name {
 			return j
 		}

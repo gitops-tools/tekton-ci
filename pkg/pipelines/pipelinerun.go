@@ -38,8 +38,8 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 		previous = beforeStepTaskName
 	}
 	for _, name := range p.Stages {
-		for _, jobName := range p.JobsForStage(name) {
-			job := p.Job(jobName)
+		for _, jobName := range p.TasksForStage(name) {
+			job := p.Task(jobName)
 			stageTask := makeTaskForStage(job.Name, name, previous, env, p.Image, job.Script)
 			tasks = append(tasks, stageTask)
 			previous = stageTask.Name

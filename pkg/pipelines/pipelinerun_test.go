@@ -147,15 +147,15 @@ func TestConvert(t *testing.T) {
 		Stages: []string{
 			"test", "build",
 		},
-		Jobs: []*ci.Job{
-			&ci.Job{
+		Tasks: []*ci.Task{
+			&ci.Task{
 				Name: "format", Stage: "test", Script: []string{
 					"go fmt $(go list ./... | grep -v /vendor/)",
 					"go vet $(go list ./... | grep -v /vendor/)",
 					"go test -race $(go list ./... | grep -v /vendor/)",
 				},
 			},
-			&ci.Job{
+			&ci.Task{
 				Name: "compile", Stage: "build", Script: []string{
 					`go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`,
 				},

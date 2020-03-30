@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	compileJob = &Job{
+	compileTask = &Task{
 		Name:  "compile",
 		Stage: "build",
 		Script: []string{
@@ -15,7 +15,7 @@ var (
 		},
 	}
 
-	formatJob = &Job{
+	formatTask = &Task{
 		Name:  "format",
 		Stage: "test",
 		Script: []string{
@@ -36,32 +36,32 @@ var (
 		Stages: []string{
 			"test", "build",
 		},
-		Jobs: []*Job{
-			compileJob,
-			formatJob,
+		Tasks: []*Task{
+			compileTask,
+			formatTask,
 		},
 	}
 )
 
-func TestJobsForStage(t *testing.T) {
+func TestTasksForStage(t *testing.T) {
 	want := map[string][]string{
 		"test":  []string{"format"},
 		"build": []string{"compile"},
 	}
 
 	for k, want := range want {
-		if diff := cmp.Diff(want, testCI.JobsForStage(k)); diff != "" {
-			t.Errorf("JobsForStage(%v) failed diff\n%s", k, diff)
+		if diff := cmp.Diff(want, testCI.TasksForStage(k)); diff != "" {
+			t.Errorf("TasksForStage(%v) failed diff\n%s", k, diff)
 		}
 	}
 }
 
-func TestJob(t *testing.T) {
-	tests := map[string]*Job{"compile": compileJob, "format": formatJob}
+func TestTask(t *testing.T) {
+	tests := map[string]*Task{"compile": compileTask, "format": formatTask}
 
 	for k, want := range tests {
-		if diff := cmp.Diff(want, testCI.Job(k)); diff != "" {
-			t.Errorf("Jobs(%v) failed diff\n%s", k, diff)
+		if diff := cmp.Diff(want, testCI.Task(k)); diff != "" {
+			t.Errorf("Tasks(%v) failed diff\n%s", k, diff)
 		}
 	}
 }
