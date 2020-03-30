@@ -1,0 +1,9 @@
+image: golang:latest
+
+after_script:
+  - echo "testing"
+
+format:
+  stage: test
+  script:
+    - echo "testing"

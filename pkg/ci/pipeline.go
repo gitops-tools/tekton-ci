@@ -5,6 +5,7 @@ type Pipeline struct {
 	Image        string
 	Variables    map[string]string
 	BeforeScript []string
+	AfterScript  []string
 	Stages       []string
 	Jobs         []*Job
 }

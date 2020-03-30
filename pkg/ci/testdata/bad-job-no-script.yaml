@@ -1,0 +1,5 @@
+stages:
+  - test
+
+format:
+  stage: test

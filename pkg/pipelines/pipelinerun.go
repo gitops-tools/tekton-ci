@@ -11,6 +11,7 @@ import (
 const (
 	gitCloneTaskName     = "git-clone"
 	beforeStepTaskName   = "before-step"
+	afterStepTaskName    = "after-step"
 	workspaceName        = "git-checkout"
 	persistentClaimName  = "shared-task-storage"
 	workspaceBindingName = "source"
@@ -33,7 +34,7 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 	}
 	previous := gitCloneTaskName
 	if len(p.BeforeScript) > 0 {
-		tasks = append(tasks, makeBeforeScriptTask(env, p.Image, p.BeforeScript))
+		tasks = append(tasks, makeScriptTask(gitCloneTaskName, beforeStepTaskName, env, p.Image, p.BeforeScript))
 		previous = beforeStepTaskName
 	}
 	for _, name := range p.Stages {
@@ -43,6 +44,11 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 			tasks = append(tasks, stageTask)
 			previous = stageTask.Name
 		}
+	}
+
+	if len(p.AfterScript) > 0 {
+		tasks = append(tasks, makeScriptTask(previous, afterStepTaskName, env, p.Image, p.AfterScript))
+		previous = beforeStepTaskName
 	}
 
 	return &pipelinev1.PipelineRun{
@@ -95,11 +101,11 @@ func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask 
 	}
 }
 
-func makeBeforeScriptTask(env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
+func makeScriptTask(runAfter, name string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
-		Name:       beforeStepTaskName,
+		Name:       name,
 		Workspaces: workspacePipelineTaskBindings(),
-		RunAfter:   []string{gitCloneTaskName},
+		RunAfter:   []string{runAfter},
 		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, script)...),
 	}
 }

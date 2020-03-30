@@ -60,7 +60,7 @@ func TestMakeGitCloneTask(t *testing.T) {
 	}
 }
 
-func TestMakeBeforeScriptTask(t *testing.T) {
+func TestMakeScriptTask(t *testing.T) {
 	image := "golang:latest"
 	beforeScript := []string{
 		"mkdir -p $GOPATH/src/$(dirname $REPO_NAME)",
@@ -71,9 +71,9 @@ func TestMakeBeforeScriptTask(t *testing.T) {
 		{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
 	}
 
-	task := makeBeforeScriptTask(env, image, beforeScript)
+	task := makeScriptTask(gitCloneTaskName, "test-script-task", env, image, beforeScript)
 	want := pipelinev1.PipelineTask{
-		Name:     beforeStepTaskName,
+		Name:     "test-script-task",
 		RunAfter: []string{gitCloneTaskName},
 		Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{
 			pipelinev1.WorkspacePipelineTaskBinding{Name: "source", Workspace: workspaceName},
@@ -161,6 +161,9 @@ func TestConvert(t *testing.T) {
 				},
 			},
 		},
+		AfterScript: []string{
+			"echo after script",
+		},
 	}
 
 	pr := Convert(p, "my-pipeline-run", source)
@@ -181,7 +184,7 @@ func TestConvert(t *testing.T) {
 			PipelineSpec: &pipelinev1.PipelineSpec{
 				Tasks: []pipelinev1.PipelineTask{
 					makeGitCloneTask(testEnv, source),
-					makeBeforeScriptTask(testEnv, p.Image, p.BeforeScript),
+					makeScriptTask(gitCloneTaskName, beforeStepTaskName, testEnv, p.Image, p.BeforeScript),
 					pipelinev1.PipelineTask{
 						Name: "format-stage-test",
 						TaskSpec: &pipelinev1.TaskSpec{
@@ -238,6 +241,7 @@ func TestConvert(t *testing.T) {
 						RunAfter:   []string{"format-stage-test"},
 						Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
 					},
+					makeScriptTask("compile-stage-build", afterStepTaskName, testEnv, p.Image, p.AfterScript),
 				},
 				Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 			},

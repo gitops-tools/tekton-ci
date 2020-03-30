@@ -34,10 +34,16 @@ func parseRaw(raw map[string]interface{}) (*Pipeline, error) {
 			cfg.Variables = normaliseStringMap(v)
 		case "before_script":
 			cfg.BeforeScript = normaliseStringSlice(v)
+		case "after_script":
+			cfg.AfterScript = normaliseStringSlice(v)
 		case "stages":
 			cfg.Stages = normaliseStringSlice(v)
 		default:
-			cfg.Jobs = append(cfg.Jobs, parseJob(k, v))
+			job, err := parseJob(k, v)
+			if err != nil {
+				return nil, err
+			}
+			cfg.Jobs = append(cfg.Jobs, job)
 		}
 	}
 	return cfg, nil
@@ -59,7 +65,7 @@ func normaliseStringSlice(vars interface{}) []string {
 	return strings
 }
 
-func parseJob(name string, v interface{}) *Job {
+func parseJob(name string, v interface{}) (*Job, error) {
 	j := &Job{Name: name}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
@@ -69,5 +75,8 @@ func parseJob(name string, v interface{}) *Job {
 			j.Script = normaliseStringSlice(v)
 		}
 	}
-	return j
+	if len(j.Script) == 0 {
+		return nil, fmt.Errorf("invalid job %#v missing script", name)
+	}
+	return j, nil
 }
