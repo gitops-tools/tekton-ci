@@ -8,8 +8,10 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	github.com/tektoncd/pipeline v0.11.0
+	go.uber.org/zap v1.13.0
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
+	k8s.io/client-go v0.17.0
 	sigs.k8s.io/yaml v1.1.0
 )
 

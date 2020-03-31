@@ -14,34 +14,6 @@ import (
 )
 
 func init() {
-	rootCmd.Flags().String(
-		"pipeline-file",
-		"",
-		"YAML with pipeline description",
-	)
-	logIfError(rootCmd.MarkFlagRequired("pipeline-file"))
-	logIfError(viper.BindPFlag("pipeline-file", rootCmd.Flags().Lookup("pipeline-file")))
-	rootCmd.Flags().String(
-		"pipelinerun-name",
-		"test-pipelinerun",
-		"inserted into the generated PipelineRun resource",
-	)
-	logIfError(viper.BindPFlag("pipelinerun-name", rootCmd.Flags().Lookup("pipelinerun-name")))
-	rootCmd.Flags().String(
-		"repository-url",
-		"",
-		"e.g. https://github.com/my-org/my-repo.git",
-	)
-	logIfError(viper.BindPFlag("repository-url", rootCmd.Flags().Lookup("repository-url")))
-	logIfError(rootCmd.MarkFlagRequired("repository-url"))
-	rootCmd.Flags().String(
-		"branch",
-		"master",
-		"checkout and execute against this branch",
-	)
-	logIfError(viper.BindPFlag("branch", rootCmd.Flags().Lookup("branch")))
-	logIfError(rootCmd.MarkFlagRequired("branch"))
-
 	cobra.OnInitialize(initConfig)
 }
 
@@ -51,29 +23,60 @@ func logIfError(e error) {
 	}
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "testing",
-	Short: "Generate a TektonCD PipelineRun from a CI pipeline description",
-	Run: func(cmd *cobra.Command, args []string) {
-		f, err := os.Open(viper.GetString("pipeline-file"))
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
+func makeRootCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "testing",
+		Short: "Generate a TektonCD PipelineRun from a CI pipeline description",
+		Run: func(cmd *cobra.Command, args []string) {
+			f, err := os.Open(viper.GetString("pipeline-file"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
 
-		parsed, err := ci.Parse(f)
-		if err != nil {
-			log.Fatal(err)
-		}
-		source := &pipelines.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
-		converted := pipelines.Convert(parsed, viper.GetString("pipelinerun-name"), source)
+			parsed, err := ci.Parse(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			source := &pipelines.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
+			converted := pipelines.Convert(parsed, viper.GetString("pipelinerun-name"), source)
 
-		d, err := yaml.Marshal(converted)
-		if err != nil {
-			log.Fatalf("error: %v", err)
-		}
-		fmt.Printf("%s\n", string(d))
-	},
+			d, err := yaml.Marshal(converted)
+			if err != nil {
+				log.Fatalf("error: %v", err)
+			}
+			fmt.Printf("%s\n", string(d))
+		},
+	}
+	cmd.Flags().String(
+		"pipeline-file",
+		"",
+		"YAML with pipeline description",
+	)
+	logIfError(cmd.MarkFlagRequired("pipeline-file"))
+	logIfError(viper.BindPFlag("pipeline-file", cmd.Flags().Lookup("pipeline-file")))
+	cmd.Flags().String(
+		"pipelinerun-name",
+		"test-pipelinerun",
+		"inserted into the generated PipelineRun resource",
+	)
+	logIfError(viper.BindPFlag("pipelinerun-name", cmd.Flags().Lookup("pipelinerun-name")))
+	cmd.Flags().String(
+		"repository-url",
+		"",
+		"e.g. https://github.com/my-org/my-repo.git",
+	)
+	logIfError(viper.BindPFlag("repository-url", cmd.Flags().Lookup("repository-url")))
+	logIfError(cmd.MarkFlagRequired("repository-url"))
+	cmd.Flags().String(
+		"branch",
+		"master",
+		"checkout and execute against this branch",
+	)
+	logIfError(viper.BindPFlag("branch", cmd.Flags().Lookup("branch")))
+	logIfError(cmd.MarkFlagRequired("branch"))
+	cmd.AddCommand(makeHTTPCmd())
+	return cmd
 }
 
 func initConfig() {
@@ -81,7 +84,7 @@ func initConfig() {
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := makeRootCmd().Execute(); err != nil {
 		log.Fatal(err)
 	}
 }

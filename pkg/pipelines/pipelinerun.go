@@ -52,7 +52,7 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 	}
 
 	return &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
+		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: pipelineRunName},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{

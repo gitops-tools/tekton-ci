@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-ci-http
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tekton-ci-http
+  template:
+    metadata:
+     labels:
+       app.kubernetes.io/name: tekton-ci-http
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: tekton-ci-http
+          image: quay.io/bigkevmcd/tekton-ci
+          imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tekton-ci-http
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tekton-ci-http
+  ports:
+    - protocol: TCP
+      port: 8080

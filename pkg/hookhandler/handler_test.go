@@ -10,6 +10,8 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm/factory"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,7 +27,8 @@ func TestHandlePushEvent(t *testing.T) {
 	}
 	fakeKube := fakeclientset.NewSimpleClientset()
 	scmClient.Client = as.Client()
-	h := Handler{httpClient: as.Client(), scmClient: scmClient, pipelineClient: fakeKube, namespace: testNS}
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := Handler{httpClient: as.Client(), scmClient: scmClient, pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 
