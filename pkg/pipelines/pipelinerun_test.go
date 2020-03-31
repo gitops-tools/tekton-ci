@@ -3,12 +3,12 @@ package pipelines
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestMakeEnv(t *testing.T) {
@@ -170,7 +170,7 @@ func TestConvert(t *testing.T) {
 
 	testEnv := makeEnv(p.Variables)
 	want := &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1alpha1", Kind: "PipelineRun"},
+		TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "my-pipeline-run"},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{

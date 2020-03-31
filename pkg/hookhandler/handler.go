@@ -2,7 +2,8 @@ package hookhandler
 
 import (
 	"bytes"
-	"log"
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
@@ -12,13 +13,17 @@ import (
 )
 
 const (
-	pipelineFilename = ".tekton_ci.yaml"
+	pipelineFilename   = ".tekton_ci.yaml"
+	defaultPipelineRun = "test-pipelinerun"
 )
 
+// Handler decodes Webhook requests, and attempts to trigger a pipelinerun based
+// on the CI configuration in the repository.
 type Handler struct {
 	httpClient     *http.Client
 	scmClient      *scm.Client
-	triggersClient pipelineclientset.Interface
+	pipelineClient pipelineclientset.Interface
+	namespace      string
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +37,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch evt := hook.(type) {
 	case *scm.PullRequestHook:
-		content, _, err := h.scmClient.Contents.Find(r.Context(), evt.Repo.FullName, pipelineFilename, evt.PullRequest.Ref)
+		repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
+		content, _, err := h.scmClient.Contents.Find(r.Context(), repo, pipelineFilename, evt.PullRequest.Ref)
 		if err != nil {
+			// TODO: should this return a 404?
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -42,12 +49,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		_ = pipelines.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
+		pr := pipelines.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
+		created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		b, err := json.Marshal(created)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
 	}
 }
 
 func nameFromPullRequest(pr *scm.PullRequestHook) string {
-	return "test-pipelinerun"
+	return defaultPipelineRun
 }
 
 func sourceFromPullRequest(pr *scm.PullRequestHook) *pipelines.Source {
