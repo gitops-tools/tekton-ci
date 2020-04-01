@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
@@ -17,8 +18,7 @@ import (
 
 const testNS = "testing"
 
-func TestHandlePushEvent(t *testing.T) {
-
+func TestHandlePullRequestEvent(t *testing.T) {
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "testdata/content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "")
@@ -44,9 +44,23 @@ func TestHandlePushEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 	if l := len(pr.Spec.PipelineSpec.Tasks); l != 4 {
-		t.Fatalf("got %d tasks, want 3", l)
+		t.Fatalf("got %d tasks, want 4", l)
 	}
+	// check that it picked up the correct source URL and branch from the
+	// fixture file.
+	want := []string{
+		"/ko-app/git-init",
+		"-url", "https://github.com/Codertocat/Hello-World.git",
+		"-revision", "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
+		"-path", "$(workspaces.source.path)",
+	}
+	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Container.Command); diff != "" {
+		t.Fatalf("git command incorrect, diff\n%s", diff)
+	}
+}
 
+func TestHandlePullRequestEventNoPipeline(t *testing.T) {
+	t.Skip()
 }
 
 func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {

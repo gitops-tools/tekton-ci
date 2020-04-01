@@ -16,6 +16,7 @@ const (
 	persistentClaimName  = "shared-task-storage"
 	workspaceBindingName = "source"
 	workspaceSourcePath  = "$(workspaces.source.path)"
+	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
 )
 
 type Source struct {
@@ -92,8 +93,8 @@ func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask 
 			pipelinev1.Step{
 				Container: corev1.Container{
 					Name:    "git-clone",
-					Image:   "alpine/git",
-					Command: []string{"git", "clone", "-v", "-b", src.Ref, src.RepoURL, workspaceSourcePath},
+					Image:   tektonGitInit,
+					Command: []string{"/ko-app/git-init", "-url", src.RepoURL, "-revision", src.Ref, "-path", workspaceSourcePath},
 					Env:     env,
 				},
 			},

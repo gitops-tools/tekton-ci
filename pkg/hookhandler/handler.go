@@ -87,6 +87,6 @@ func nameFromPullRequest(pr *scm.PullRequestHook) string {
 func sourceFromPullRequest(pr *scm.PullRequestHook) *pipelines.Source {
 	return &pipelines.Source{
 		RepoURL: pr.Repo.Clone,
-		Ref:     pr.PullRequest.Source,
+		Ref:     pr.PullRequest.Sha,
 	}
 }
