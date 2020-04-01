@@ -41,8 +41,8 @@ func TestMakeGitCloneTask(t *testing.T) {
 				pipelinev1.Step{
 					Container: corev1.Container{
 						Name:    "git-clone",
-						Image:   "alpine/git",
-						Command: []string{"git", "clone", "-v", "-b", "master", repoURL, workspaceSourcePath},
+						Image:   "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init",
+						Command: []string{"/ko-app/git-init", "-url", repoURL, "-revision", "master", "-path", workspaceSourcePath},
 						Env: []corev1.EnvVar{
 							corev1.EnvVar{
 								Name:  "CI_PROJECT_DIR",
@@ -170,7 +170,7 @@ func TestConvert(t *testing.T) {
 
 	testEnv := makeEnv(p.Variables)
 	want := &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
+		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "my-pipeline-run"},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
