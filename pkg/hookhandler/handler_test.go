@@ -13,6 +13,7 @@ import (
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,9 +37,8 @@ func TestHandlePullRequestEvent(t *testing.T) {
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {
-		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	// TODO: decode the result and check that it's a PipelineRun
 	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(defaultPipelineRun, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -60,20 +60,47 @@ func TestHandlePullRequestEvent(t *testing.T) {
 }
 
 func TestHandlePullRequestEventNoPipeline(t *testing.T) {
-	t.Skip()
+	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fakeKube := fakeclientset.NewSimpleClientset()
+	scmClient.Client = as.Client()
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := Handler{httpClient: as.Client(), scmClient: scmClient, pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
+	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	w := rec.Result()
+	if w.StatusCode != http.StatusOK {
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
+	}
+	_, err = fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(defaultPipelineRun, metav1.GetOptions{})
+	if !errors.IsNotFound(err) {
+		t.Fatalf("pipelinerun was created when no pipeline definition exists")
+	}
+
 }
 
 func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, err := ioutil.ReadFile(fixture)
-		if err != nil {
-			t.Fatalf("failed to read %s: %s", fixture, err)
-		}
 		if r.URL.Path != urlPath {
 			t.Fatalf("request path got %s, want %s", r.URL.Path, urlPath)
 		}
 		if queryRef := r.URL.Query().Get("ref"); queryRef != ref {
 			t.Fatalf("failed to match ref, got %s, want %s", queryRef, ref)
+		}
+		if fixture == "" {
+			http.NotFound(w, r)
+			return
+		}
+		b, err := ioutil.ReadFile(fixture)
+		if err != nil {
+			t.Fatalf("failed to read %s: %s", fixture, err)
 		}
 		w.Write(b)
 	}))

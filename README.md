@@ -35,6 +35,18 @@ There is an example [volume.yaml](./examples/volume.yaml).
 By creating a volume, and executing the example pipeline, it should execute and
 the PipelineRun will complete.
 
+## HTTP Hook Handler.
+
+This needs a recent version of Tekton Pipelines installed, and a simple volume claim (see the example above).
+
+```shell
+kubectl apply -f deploy/
+```
+
+This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks.
+
+After this, create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a pull-request is created.
+
 ## Currently understood syntax
 
 ```yaml
@@ -45,14 +57,14 @@ image: golang:latest
 before_script:
   - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.24.0
 
-# This provides ordering of the jobs defined in the pipeline,
-# all tasks in each stage will be scheduled ahead of the tasks in
+# This provides ordering of the tasks defined in the pipeline,
+# all steps in each stage will be scheduled ahead of the tasks in
 # subsequent stages.
 stages:
   - test
   - build
 
-# This is a "Job" called "format", it's executed in the "test" stage above.
+# This is a "Task" called "format", it's executed in the "test" stage above.
 # It will be executed in the top-level directory of the checked out code.
 format:
   stage: test
@@ -63,7 +75,7 @@ format:
     - ./bin/golangci-lint run
     - go test -race ./...
 
-# this is another Job, it will be executed in the "build" stage, which because
+# this is another Task, it will be executed in the "build" stage, which because
 # of the definition of the stages above, will be executed after the "test" stage
 # jobs.
 compile:
@@ -79,3 +91,5 @@ compile:
  * Provide support for calling other Tekton tasks.
  * Support for service-broker bindings
  * HTTP hook endpoint to trigger pipelineruns automatically
+ * Automatic Volume creation
+ * Move away from the bespoke YAML definition to a more structured approach (easier to parse).
