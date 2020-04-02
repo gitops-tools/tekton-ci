@@ -22,16 +22,14 @@ const (
 // Handler decodes Webhook requests, and attempts to trigger a pipelinerun based
 // on the CI configuration in the repository.
 type Handler struct {
-	httpClient     *http.Client
 	scmClient      *scm.Client
 	pipelineClient pipelineclientset.Interface
 	namespace      string
 	log            logger
 }
 
-func New(client *http.Client, scmClient *scm.Client, pipelineClient pipelineclientset.Interface, namespace string, l logger) *Handler {
+func New(scmClient *scm.Client, pipelineClient pipelineclientset.Interface, namespace string, l logger) *Handler {
 	return &Handler{
-		httpClient:     client,
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
 		namespace:      namespace,

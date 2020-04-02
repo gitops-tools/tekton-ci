@@ -40,7 +40,6 @@ func makeHTTPCmd() *cobra.Command {
 			sugar := logger.Sugar()
 
 			handler := githooks.New(
-				http.DefaultClient,
 				scmClient,
 				kubeClient,
 				viper.GetString("namespace"),
