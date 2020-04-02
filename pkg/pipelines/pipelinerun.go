@@ -54,7 +54,7 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 
 	return &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: pipelineRunName},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: pipelineRunName, Annotations: trackerAnnotations()},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{
@@ -115,12 +115,7 @@ func makeScriptSteps(env []corev1.EnvVar, image string, commands []string) []pip
 	steps := make([]pipelinev1.Step, len(commands))
 	for i, c := range commands {
 		steps[i] = pipelinev1.Step{
-			Container: corev1.Container{
-				Image:      image,
-				Command:    []string{"sh", "-c", c},
-				Env:        env,
-				WorkingDir: workspaceSourcePath,
-			},
+			Container: container("", image, []string{"sh", "-c", c}, env, workspaceSourcePath),
 		}
 	}
 	return steps
@@ -153,4 +148,21 @@ func makeEnv(m map[string]string) []corev1.EnvVar {
 	}
 	vars = append(vars, corev1.EnvVar{Name: "CI_PROJECT_DIR", Value: workspaceSourcePath})
 	return vars
+}
+
+func trackerAnnotations() map[string]string {
+	return map[string]string{
+		"tekton.dev/git-status":     "true",
+		"tekton.dev/status-context": "tekton-ci",
+	}
+}
+
+func container(name, image string, command []string, env []corev1.EnvVar, workDir string) corev1.Container {
+	return corev1.Container{
+		Name:       name,
+		Image:      image,
+		Command:    command,
+		Env:        env,
+		WorkingDir: workDir,
+	}
 }
