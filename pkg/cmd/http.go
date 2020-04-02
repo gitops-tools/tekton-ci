@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/hookhandler"
+	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 )
@@ -39,7 +39,7 @@ func makeHTTPCmd() *cobra.Command {
 			defer logger.Sync() // flushes buffer, if any
 			sugar := logger.Sugar()
 
-			handler := hookhandler.New(
+			handler := githooks.New(
 				http.DefaultClient,
 				scmClient,
 				kubeClient,

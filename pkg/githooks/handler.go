@@ -1,4 +1,4 @@
-package hookhandler
+package githooks
 
 import (
 	"bytes"

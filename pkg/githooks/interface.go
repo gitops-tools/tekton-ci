@@ -1,4 +1,4 @@
-package hookhandler
+package githooks
 
 type logger interface {
 	Infof(template string, args ...interface{})
