@@ -90,12 +90,7 @@ func TestMakeScriptTask(t *testing.T) {
 						Image:      image,
 						Command:    []string{"sh", "-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"},
 						WorkingDir: "$(workspaces.source.path)",
-						Env: []corev1.EnvVar{
-							corev1.EnvVar{
-								Name:  "CI_PROJECT_DIR",
-								Value: "$(workspaces.source.path)",
-							},
-						},
+						Env:        env,
 					},
 				},
 				pipelinev1.Step{
@@ -103,12 +98,7 @@ func TestMakeScriptTask(t *testing.T) {
 						Image:      image,
 						Command:    []string{"sh", "-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"},
 						WorkingDir: "$(workspaces.source.path)",
-						Env: []corev1.EnvVar{
-							corev1.EnvVar{
-								Name:  "CI_PROJECT_DIR",
-								Value: "$(workspaces.source.path)",
-							},
-						},
+						Env:        env,
 					},
 				},
 				pipelinev1.Step{
@@ -116,12 +106,7 @@ func TestMakeScriptTask(t *testing.T) {
 						Image:      image,
 						Command:    []string{"sh", "-c", "cd $GOPATH/src/$REPO_NAME"},
 						WorkingDir: "$(workspaces.source.path)",
-						Env: []corev1.EnvVar{
-							corev1.EnvVar{
-								Name:  "CI_PROJECT_DIR",
-								Value: "$(workspaces.source.path)",
-							},
-						},
+						Env:        env,
 					},
 				},
 			},
@@ -171,7 +156,7 @@ func TestConvert(t *testing.T) {
 	testEnv := makeEnv(p.Variables)
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "my-pipeline-run"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "my-pipeline-run", Annotations: trackerAnnotations()},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{
@@ -223,17 +208,8 @@ func TestConvert(t *testing.T) {
 						Name: "compile-stage-build",
 						TaskSpec: &pipelinev1.TaskSpec{
 							Steps: []pipelinev1.Step{
-								{
-									Container: corev1.Container{
-										Image: "golang:latest",
-										Command: []string{
-											"sh",
-											"-c",
-											`go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`,
-										},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
+								pipelinev1.Step{
+									Container: container("", "golang:latest", []string{"sh", "-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
 								},
 							},
 							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
@@ -250,5 +226,21 @@ func TestConvert(t *testing.T) {
 
 	if diff := cmp.Diff(want, pr); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
+	}
+}
+
+func TestContainer(t *testing.T) {
+	env := []corev1.EnvVar{corev1.EnvVar{Name: "TEST_DIR", Value: "/tmp/test"}}
+	got := container("test-name", "test-image", []string{"run", "this"}, env, "/tmp/dir")
+	want := corev1.Container{
+		Name:       "test-name",
+		Image:      "test-image",
+		Command:    []string{"run", "this"},
+		Env:        env,
+		WorkingDir: "/tmp/dir",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("Container doesn't match:\n%s", diff)
 	}
 }
