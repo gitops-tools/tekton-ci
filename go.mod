@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/google/go-cmp v0.4.0
-	github.com/jenkins-x/go-scm v1.5.83
+	github.com/jenkins-x/go-scm v1.5.84
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	github.com/tektoncd/pipeline v0.11.0

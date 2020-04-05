@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap/zaptest"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bigkevmcd/tekton-ci/pkg/git"
 )
 
 const testNS = "testing"
@@ -29,7 +31,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	fakeKube := fakeclientset.NewSimpleClientset()
 	scmClient.Client = as.Client()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := Handler{scmClient: scmClient, pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
+	h := Handler{scmClient: git.New(scmClient), pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 
@@ -69,7 +71,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	fakeKube := fakeclientset.NewSimpleClientset()
 	scmClient.Client = as.Client()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := Handler{scmClient: scmClient, pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
+	h := Handler{scmClient: git.New(scmClient), pipelineClient: fakeKube, namespace: testNS, log: logger.Sugar()}
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 

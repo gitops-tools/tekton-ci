@@ -10,9 +10,11 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+
+	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -40,7 +42,7 @@ func makeHTTPCmd() *cobra.Command {
 			sugar := logger.Sugar()
 
 			handler := githooks.New(
-				scmClient,
+				git.New(scmClient),
 				kubeClient,
 				viper.GetString("namespace"),
 				sugar,

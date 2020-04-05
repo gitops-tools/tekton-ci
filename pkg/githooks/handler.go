@@ -11,6 +11,7 @@ import (
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/pipelines"
 )
 
@@ -22,13 +23,13 @@ const (
 // Handler decodes Webhook requests, and attempts to trigger a pipelinerun based
 // on the CI configuration in the repository.
 type Handler struct {
-	scmClient      *scm.Client
+	scmClient      git.SCM
 	pipelineClient pipelineclientset.Interface
 	namespace      string
 	log            logger
 }
 
-func New(scmClient *scm.Client, pipelineClient pipelineclientset.Interface, namespace string, l logger) *Handler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
@@ -39,9 +40,7 @@ func New(scmClient *scm.Client, pipelineClient pipelineclientset.Interface, name
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: Fetch the Secret and do the comparison here.
-	hook, err := h.scmClient.Webhooks.Parse(r, func(scm.Webhook) (string, error) {
-		return "", nil
-	})
+	hook, err := h.scmClient.ParseWebhookRequest(r)
 	if err != nil {
 		h.log.Errorf("error parsing webhook: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -59,8 +58,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handlePullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
-	content, res, err := h.scmClient.Contents.Find(ctx, repo, pipelineFilename, evt.PullRequest.Ref)
-	if isNotFound(res) {
+	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)
+	if git.IsNotFound(err) {
 		h.log.Infof("no pipeline definition found in %s", repo)
 		return
 	}
@@ -70,7 +69,7 @@ func (h *Handler) handlePullRequest(ctx context.Context, evt *scm.PullRequestHoo
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	parsed, err := ci.Parse(bytes.NewReader(content.Data))
+	parsed, err := ci.Parse(bytes.NewReader(content))
 	if err != nil {
 		h.log.Errorf("error parsing pipeline definition: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
