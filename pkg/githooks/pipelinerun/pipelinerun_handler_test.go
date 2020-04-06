@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -52,24 +53,27 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if l := len(pr.Spec.PipelineSpec.Tasks); l != 4 {
-		t.Fatalf("got %d tasks, want 4", l)
+
+	if l := len(pr.Spec.PipelineSpec.Tasks); l != 1 {
+		t.Fatalf("got %d tasks, want 1", l)
 	}
-	// check that it picked up the correct source URL and branch from the
-	// fixture file.
-	want := []string{
-		"/ko-app/git-init",
-		"-url", "https://github.com/Codertocat/Hello-World.git",
-		"-revision", "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
-		"-path", "$(workspaces.source.path)",
+	// check that it evaluated the parameters in the example.
+	want := []pipelinev1.Param{
+		pipelinev1.Param{
+			Name: "COMMIT_SHA",
+			Value: pipelinev1.ArrayOrString{
+				Type:      "string",
+				StringVal: "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
+			},
+		},
 	}
-	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Container.Command); diff != "" {
-		t.Fatalf("git command incorrect, diff\n%s", diff)
+	if diff := cmp.Diff(want, pr.Spec.Params); diff != "" {
+		t.Fatalf("pipelinerun parameters incorrect, diff\n%s", diff)
 	}
 }
 
 func TestHandlePullRequestEventNoPipeline(t *testing.T) {
-	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "")
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton/pull_request.yaml", "refs/pull/2/head", "")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {

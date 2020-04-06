@@ -16,6 +16,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipeline"
+	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipelinerun"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -47,13 +48,22 @@ func makeHTTPCmd() *cobra.Command {
 				kubeClient,
 				viper.GetString("namespace"),
 				sugar)
-			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
+			pipelinerunHandler := pipelinerun.New(
+				git.New(scmClient),
+				kubeClient,
+				viper.GetString("namespace"),
+				sugar)
 			http.Handle("/pipeline", githooks.New(
 				git.New(scmClient),
 				pipelineHandler,
 				sugar,
 			))
-
+			http.Handle("/pipelinerun", githooks.New(
+				git.New(scmClient),
+				pipelinerunHandler,
+				sugar,
+			))
+			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
 			log.Fatal(http.ListenAndServe(listen, nil))
 		},
 	}

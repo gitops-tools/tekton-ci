@@ -13,11 +13,10 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 	"github.com/bigkevmcd/tekton-ci/pkg/pipelinerun"
-	"github.com/bigkevmcd/tekton-ci/pkg/pipelines"
 )
 
 const (
-	pullRequestFilename = "./.tekton/pull_request.yaml"
+	pullRequestFilename = ".tekton/pull_request.yaml"
 	defaultPipelineRun  = "test-pipelinerun"
 )
 
@@ -59,7 +58,12 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr := pipelines.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
+	pr, err := pipelinerun.Execute(parsed, evt, nameFromPullRequest(evt))
+	if err != nil {
+		h.log.Errorf("error executing pipelined definition: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)
@@ -67,18 +71,21 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		return
 	}
 	b, err := json.Marshal(created)
+	if err != nil {
+		h.log.Errorf("error marshaling response: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(b)
+	_, err = w.Write(b)
+	if err != nil {
+		h.log.Errorf("error writing response: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	h.log.Infow("completed request")
 }
 
 func nameFromPullRequest(pr *scm.PullRequestHook) string {
 	return defaultPipelineRun
-}
-
-func sourceFromPullRequest(pr *scm.PullRequestHook) *pipelines.Source {
-	return &pipelines.Source{
-		RepoURL: pr.Repo.Clone,
-		Ref:     pr.PullRequest.Sha,
-	}
 }

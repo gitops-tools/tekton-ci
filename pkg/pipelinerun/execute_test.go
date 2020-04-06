@@ -26,18 +26,18 @@ func TestExecute(t *testing.T) {
 		GUID: hookGUID,
 	}
 
-	pr, err := Execute(d, hook)
+	pr, err := Execute(d, hook, "new-pipeline-run")
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "test-pipeline-run"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "new-pipeline-run"},
 		Spec: pipelinev1.PipelineRunSpec{
 			Params: []pipelinev1.Param{
 				pipelinev1.Param{
 					Name:  "COMMIT_SHA",
-					Value: pipelinev1.ArrayOrString{StringVal: testSHA},
+					Value: pipelinev1.ArrayOrString{StringVal: testSHA, Type: "string"},
 				},
 			},
 			PipelineSpec: testPipelineSpec,

@@ -10,8 +10,8 @@ import (
 )
 
 // Execute takes a PipelineDefinition and a hook, and returns a PipelineRun
-// and an error.
-func Execute(pd *PipelineDefinition, hook interface{}) (*pipelinev1.PipelineRun, error) {
+// or an error.
+func Execute(pd *PipelineDefinition, hook interface{}, name string) (*pipelinev1.PipelineRun, error) {
 	env, err := makeCelEnv()
 	if err != nil {
 		return nil, fmt.Errorf("failed to make CEL environment: %w", err)
@@ -41,16 +41,17 @@ func Execute(pd *PipelineDefinition, hook interface{}) (*pipelinev1.PipelineRun,
 
 	pr := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "test-pipeline-run"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: name},
 		Spec:       pd.PipelineRunSpec,
 	}
 	return pr, nil
 }
 
+// TODO: This should probably stringify other ref.Types
 func valToString(v ref.Val) pipelinev1.ArrayOrString {
 	switch val := v.(type) {
 	case types.String:
-		return pipelinev1.ArrayOrString{StringVal: val.Value().(string)}
+		return pipelinev1.ArrayOrString{StringVal: val.Value().(string), Type: "string"}
 	}
-	return pipelinev1.ArrayOrString{StringVal: "unknown"}
+	return pipelinev1.ArrayOrString{StringVal: "unknown", Type: "string"}
 }
