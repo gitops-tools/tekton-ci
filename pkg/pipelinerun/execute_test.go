@@ -32,7 +32,7 @@ func TestExecute(t *testing.T) {
 	}
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "new-pipeline-run"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-"},
 		Spec: pipelinev1.PipelineRunSpec{
 			Params: []pipelinev1.Param{
 				pipelinev1.Param{

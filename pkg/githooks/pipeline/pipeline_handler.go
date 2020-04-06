@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	pipelineFilename   = ".tekton_ci.yaml"
-	defaultPipelineRun = "test-pipelinerun"
+	pipelineFilename         = ".tekton_ci.yaml"
+	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
 // PipelineHandler implements the GitEventHandler interface and processes
@@ -73,7 +73,7 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 }
 
 func nameFromPullRequest(pr *scm.PullRequestHook) string {
-	return defaultPipelineRun
+	return defaultPipelineRunPrefix
 }
 
 func sourceFromPullRequest(pr *scm.PullRequestHook) *pipelines.Source {

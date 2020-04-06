@@ -11,7 +11,7 @@ import (
 
 // Execute takes a PipelineDefinition and a hook, and returns a PipelineRun
 // or an error.
-func Execute(pd *PipelineDefinition, hook interface{}, name string) (*pipelinev1.PipelineRun, error) {
+func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pipelinev1.PipelineRun, error) {
 	env, err := makeCelEnv()
 	if err != nil {
 		return nil, fmt.Errorf("failed to make CEL environment: %w", err)
@@ -41,7 +41,7 @@ func Execute(pd *PipelineDefinition, hook interface{}, name string) (*pipelinev1
 
 	pr := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: name},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: generateName},
 		Spec:       pd.PipelineRunSpec,
 	}
 	return pr, nil

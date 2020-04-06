@@ -28,7 +28,7 @@ type Source struct {
 // TektonCD PipelineRun with an embedded Pipeline with the tasks to execute.
 //
 // TODO: allow passing in of the persistentClaimName.
-func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.PipelineRun {
+func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source) *pipelinev1.PipelineRun {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
@@ -54,7 +54,7 @@ func Convert(p *ci.Pipeline, pipelineRunName string, src *Source) *pipelinev1.Pi
 
 	return &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: pipelineRunName, Annotations: trackerAnnotations()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: pipelineRunNamePrefix, Annotations: trackerAnnotations()},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{

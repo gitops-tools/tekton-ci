@@ -151,12 +151,12 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr := Convert(p, "my-pipeline-run", source)
+	pr := Convert(p, "my-pipeline-run-", source)
 
 	testEnv := makeEnv(p.Variables)
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", Name: "my-pipeline-run", Annotations: trackerAnnotations()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "my-pipeline-run-", Annotations: trackerAnnotations()},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{

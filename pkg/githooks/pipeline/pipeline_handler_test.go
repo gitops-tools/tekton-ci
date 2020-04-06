@@ -48,7 +48,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(defaultPipelineRun, metav1.GetOptions{})
+	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(defaultPipelineRun, metav1.GetOptions{})
+	_, err = fakeKube.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when no pipeline definition exists")
 	}
