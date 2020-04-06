@@ -4,6 +4,12 @@ This is a very early, pre-Alpha release of this code.
 
 It can take a CI definition, similar to the GitLab CI definition, and execute the steps / tasks as a [TektonCD](https://github.com/tektoncd/pipeline) definition.
 
+It has two different bits:
+
+ * A "pipeline definition" to PipelineRun converter.
+ * An HTTP Server that handles Hook requests from GitHub by requesting pipeline
+   files from the incoming repository, and processing them.
+
 ## Building
 
 ```shell
@@ -84,12 +90,16 @@ compile:
     - go build -race -ldflags "-extldflags '-static'" -o testing ./cmd/github-tool
 ```
 
+## HTTP server
+
+See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
+
 ## Things to do
 
- * Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)
+ * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
  * Support more syntax items (extra containers, do something with artifacts).
  * Provide support for calling other Tekton tasks.
  * Support for service-broker bindings
- * HTTP hook endpoint to trigger pipelineruns automatically
+ * ~~HTTP hook endpoint to trigger pipelineruns automatically~~
  * Automatic Volume creation
  * Move away from the bespoke YAML definition to a more structured approach (easier to parse).
