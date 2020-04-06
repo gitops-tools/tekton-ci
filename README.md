@@ -49,7 +49,7 @@ This needs a recent version of Tekton Pipelines installed, and a simple volume c
 kubectl apply -f deploy/
 ```
 
-This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks.
+This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
 
 After this, create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a pull-request is created.
 
