@@ -10,24 +10,24 @@ import (
 )
 
 type ParamBinding struct {
-	Name  string `yaml:"name"`
-	Value string `yaml:"value"`
+	Name       string `yaml:"name"`
+	Expression string `yaml:"expression"`
 }
 
-type PipelineRun struct {
-	Expression      string                     `yaml:"expression"`
+type PipelineDefinition struct {
+	Filter          string                     `yaml:"expression"`
 	ParamBindings   []ParamBinding             `yaml:"param_bindings"`
 	PipelineRunSpec pipelinev1.PipelineRunSpec `yaml:"pipeline_run_spec"`
 }
 
-// Parse decodes YAML describing a PipelineRun and returns the resource.
-func Parse(in io.Reader) (*PipelineRun, error) {
+// Parse decodes YAML describing a PipelineDefinition and returns the resource.
+func Parse(in io.Reader) (*PipelineDefinition, error) {
 	body, err := ioutil.ReadAll(in)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read YAML: %w", err)
 	}
 
-	var pr PipelineRun
+	var pr PipelineDefinition
 	err = yaml.Unmarshal(body, &pr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode YAML: %w", err)

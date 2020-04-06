@@ -1,0 +1,18 @@
+{
+  "name": ".tekton_ci.yml",
+  "path": ".tekton_ci.yml",
+  "sha": "980a0d5f19a64b4b30a87d4206aade58726b60e3",
+  "size": 13,
+  "url": "https://api.github.com/repos/octocat/Hello-World/contents/README?ref=7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+  "html_url": "https://github.com/octocat/Hello-World/blob/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d/README",
+  "git_url": "https://api.github.com/repos/octocat/Hello-World/git/blobs/980a0d5f19a64b4b30a87d4206aade58726b60e3",
+  "download_url": "https://raw.githubusercontent.com/octocat/Hello-World/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d/README",
+  "type": "file",
+  "content": "ZXhwcmVzc2lvbjogYWN0aW9uID09ICdvcGVuZWQnCnBhcmFtQmluZGluZ3M6CiAgLSBuYW1lOiBDT01NSVRfU0hBCiAgICB2YWx1ZTogaG9vay5zaGEKcGlwZWxpbmVSdW5TcGVjOgogIHBpcGVsaW5lU3BlYzoKICAgIHBhcmFtczoKICAgICAgLSBuYW1lOiBDT01NSVRfU0hBCiAgICAgICAgdHlwZTogc3RyaW5nCiAgICAgICAgZGVzY3JpcHRpb246IHRoZSBTSEEgZm9yIHRoZSBwdWxsX3JlcXVlc3QKICAgIHRhc2tzOgogICAgICAtIG5hbWU6IGVjaG8tY29tbWl0LXNoYQogICAgICAgIHRhc2tTcGVjOgogICAgICAgICAgc3RlcHM6CiAgICAgICAgICAgIC0gbmFtZTogZWNobwogICAgICAgICAgICAgIGltYWdlOiB1YnVudHUKICAgICAgICAgICAgICBzY3JpcHQ6IHwKICAgICAgICAgICAgICAgICMhL3Vzci9iaW4vZW52IGJhc2gKICAgICAgICAgICAgICAgIGVjaG8gIiQocGFyYW1zLkNPTU1JVF9TSEEpIgo=",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/octocat/Hello-World/contents/README?ref=7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+    "git": "https://api.github.com/repos/octocat/Hello-World/git/blobs/980a0d5f19a64b4b30a87d4206aade58726b60e3",
+    "html": "https://github.com/octocat/Hello-World/blob/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d/README"
+  }
+}

@@ -10,41 +10,43 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var testPipelineSpec = &pipelinev1.PipelineSpec{
+	Params: []pipelinev1.ParamSpec{
+		pipelinev1.ParamSpec{
+			Name:        "COMMIT_SHA",
+			Type:        "string",
+			Description: "the SHA for the pull_request",
+		},
+	},
+	Tasks: []pipelinev1.PipelineTask{
+		pipelinev1.PipelineTask{
+			Name: "echo-commit-sha",
+			TaskSpec: &pipelinev1.TaskSpec{
+				Steps: []pipelinev1.Step{
+					{
+						Container: corev1.Container{Name: "echo", Image: "ubuntu"},
+						Script:    "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
+					},
+				},
+			},
+		},
+	},
+}
+
 func TestParse(t *testing.T) {
 	parseTests := []struct {
 		filename string
-		want     *PipelineRun
+		want     *PipelineDefinition
 	}{
 		{
 			"testdata/example.yaml",
-			&PipelineRun{
-				Expression: "action == 'opened'",
+			&PipelineDefinition{
+				Filter: "hook.Action == 'opened'",
 				ParamBindings: []ParamBinding{
-					ParamBinding{Name: "COMMIT_SHA", Value: "hook.sha"},
+					ParamBinding{Name: "COMMIT_SHA", Expression: "hook.PullRequest.Sha"},
 				},
 				PipelineRunSpec: pipelinev1.PipelineRunSpec{
-					PipelineSpec: &pipelinev1.PipelineSpec{
-						Params: []pipelinev1.ParamSpec{
-							pipelinev1.ParamSpec{
-								Name:        "COMMIT_SHA",
-								Type:        "string",
-								Description: "the SHA for the pull_request",
-							},
-						},
-						Tasks: []pipelinev1.PipelineTask{
-							pipelinev1.PipelineTask{
-								Name: "echo-commit-sha",
-								TaskSpec: &pipelinev1.TaskSpec{
-									Steps: []pipelinev1.Step{
-										{
-											Container: corev1.Container{Name: "echo", Image: "ubuntu"},
-											Script:    "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
-										},
-									},
-								},
-							},
-						},
-					},
+					PipelineSpec: testPipelineSpec,
 				},
 			},
 		},

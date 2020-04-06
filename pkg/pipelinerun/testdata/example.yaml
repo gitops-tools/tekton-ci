@@ -1,7 +1,7 @@
-expression: action == 'opened'
+filter: hook.Action == 'opened'
 paramBindings:
   - name: COMMIT_SHA
-    value: hook.sha
+    expression: hook.PullRequest.Sha
 pipelineRunSpec:
   pipelineSpec:
     params:
