@@ -1,4 +1,4 @@
-package githooks
+package pipeline
 
 import (
 	"bytes"
@@ -39,7 +39,7 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespac
 	}
 }
 
-func (h *PipelineHandler) handlePullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)

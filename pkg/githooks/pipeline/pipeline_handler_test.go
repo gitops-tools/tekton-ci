@@ -1,4 +1,4 @@
-package githooks
+package pipeline
 
 import (
 	"bytes"
@@ -42,7 +42,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	}
 	rec := httptest.NewRecorder()
 
-	h.handlePullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {
@@ -86,7 +86,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	}
 	rec := httptest.NewRecorder()
 
-	h.handlePullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {

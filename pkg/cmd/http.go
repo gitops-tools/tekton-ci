@@ -42,18 +42,18 @@ func makeHTTPCmd() *cobra.Command {
 			defer logger.Sync() // flushes buffer, if any
 			sugar := logger.Sugar()
 
-			eventHandler := pipeline.New(
+			pipelineHandler := pipeline.New(
 				git.New(scmClient),
 				kubeClient,
 				viper.GetString("namespace"),
 				sugar)
-			handler := githooks.New(
-				git.New(scmClient),
-				eventHandler,
-				sugar,
-			)
 			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
-			http.Handle("/", handler)
+			http.Handle("/pipeline", githooks.New(
+				git.New(scmClient),
+				pipelineHandler,
+				sugar,
+			))
+
 			log.Fatal(http.ListenAndServe(listen, nil))
 		},
 	}
