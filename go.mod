@@ -3,6 +3,7 @@ module github.com/bigkevmcd/tekton-ci
 go 1.14
 
 require (
+	github.com/google/cel-go v0.4.1
 	github.com/google/go-cmp v0.4.0
 	github.com/jenkins-x/go-scm v1.5.84
 	github.com/spf13/cobra v0.0.5
