@@ -59,9 +59,13 @@ After this, create a simple `.tekton_ci.yaml` in the root of your repository, fo
 # this image is used when executing the script.
 image: golang:latest
 
-# before_script is performed before any of the jobs.
+# before_script is performed before any of the tasks.
 before_script:
   - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.24.0
+
+# after_script is performed before any of the tasks.
+after_script:
+  - echo "after script"
 
 # This provides ordering of the tasks defined in the pipeline,
 # all steps in each stage will be scheduled ahead of the tasks in
@@ -96,10 +100,13 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
- * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
+ * Automate volume claims for the script-based DSL.
  * Support more syntax items (extra containers, do something with artifacts).
- * Provide support for calling other Tekton tasks.
- * Support for service-broker bindings
+ * Provide support for calling other Tekton tasks from the script DSL.
+ * Support for service-broker bindings.
+ * Move away from the bespoke YAML definition to a more structured approach
+   (easier to parse) - this is required for better integration with Tekton
+   tasks.
+ * Support more events (Push) and actions other than `opened` for the script DSL format.
+ * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
  * ~~HTTP hook endpoint to trigger pipelineruns automatically~~
- * Automatic Volume creation
- * Move away from the bespoke YAML definition to a more structured approach (easier to parse).

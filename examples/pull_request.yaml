@@ -1,0 +1,25 @@
+filter: hook.Action == 'opened'
+paramBindings:
+  - name: COMMIT_SHA
+    expression: hook.PullRequest.Sha
+pipelineRunSpec:
+  pipelineSpec:
+    params:
+      - name: COMMIT_SHA
+        description: "The commit from the pull_request"
+        type: string
+    tasks:
+      - name: echo-commit
+        taskSpec:
+          params:
+          - name: COMMIT
+            type: string
+          steps:
+            - name: echo
+              image: ubuntu
+              script: |
+                #!/usr/bin/env bash
+                echo "$(params.COMMIT)"
+        params:
+          - name: COMMIT
+            value: $(params.COMMIT_SHA)
