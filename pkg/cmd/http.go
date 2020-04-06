@@ -15,6 +15,7 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
+	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipeline"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -41,10 +42,14 @@ func makeHTTPCmd() *cobra.Command {
 			defer logger.Sync() // flushes buffer, if any
 			sugar := logger.Sugar()
 
-			handler := githooks.New(
+			eventHandler := pipeline.New(
 				git.New(scmClient),
 				kubeClient,
 				viper.GetString("namespace"),
+				sugar)
+			handler := githooks.New(
+				git.New(scmClient),
+				eventHandler,
 				sugar,
 			)
 			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
