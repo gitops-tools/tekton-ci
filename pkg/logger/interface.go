@@ -1,6 +1,6 @@
-package githooks
+package logger
 
-type logger interface {
+type Logger interface {
 	Infof(template string, args ...interface{})
 	Infow(msg string, keysAndValues ...interface{})
 	Errorf(template string, args ...interface{})

@@ -1,19 +1,19 @@
-expression: ""
-param_bindings:
-  - name: "COMMIT_SHA"
-    value: "hook.sha"
-pipeline_run:
+expression: action == 'opened'
+paramBindings:
+  - name: COMMIT_SHA
+    value: hook.sha
+pipelineRunSpec:
   pipelineSpec:
     params:
       - name: COMMIT_SHA
-        description: "the SHA for the pull_request"
         type: string
+        description: the SHA for the pull_request
     tasks:
-      - name: echo-good-morning
+      - name: echo-commit-sha
         taskSpec:
           steps:
             - name: echo
               image: ubuntu
               script: |
                 #!/usr/bin/env bash
-                echo "$(params.COMMIT_SHA)
+                echo "$(params.COMMIT_SHA)"

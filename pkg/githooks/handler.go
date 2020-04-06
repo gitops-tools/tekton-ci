@@ -12,6 +12,7 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 	"github.com/bigkevmcd/tekton-ci/pkg/pipelines"
 )
 
@@ -26,10 +27,10 @@ type Handler struct {
 	scmClient      git.SCM
 	pipelineClient pipelineclientset.Interface
 	namespace      string
-	log            logger
+	log            logger.Logger
 }
 
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger) *Handler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
