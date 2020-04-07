@@ -1,4 +1,4 @@
-package pipelines
+package dsl
 
 import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"

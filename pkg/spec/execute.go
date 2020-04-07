@@ -1,4 +1,4 @@
-package pipelinerun
+package spec
 
 import (
 	"fmt"
@@ -10,7 +10,13 @@ import (
 )
 
 // Execute takes a PipelineDefinition and a hook, and returns a PipelineRun
-// or an error.
+// and possibly an error.
+//
+// The Filter on the definition is evaluated, and if it returns true, then the
+// ParamBindings are evaluated and appended to the PipelineRunSpec's Params.
+//
+// Finally a PipelineRun is returned, populated with the spec from the
+// definition.
 func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pipelinev1.PipelineRun, error) {
 	env, err := makeCelEnv()
 	if err != nil {
@@ -27,6 +33,9 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 			return nil, fmt.Errorf("failed to evaluate the expression '%s': %w", pd.Filter, err)
 		}
 
+		// TODO: should this return a specific type, so that the HTTP endpoint
+		// can decide whether or not this is actually an error, or merely a
+		// signal that it should not continue?
 		if match != types.True {
 			return nil, fmt.Errorf("expression %s did not return true", pd.Filter)
 		}
@@ -39,9 +48,10 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 		pd.PipelineRunSpec.Params = append(pd.PipelineRunSpec.Params, pipelinev1.Param{Name: v.Name, Value: valToString(evaluated)})
 	}
 
+	// TODO: reduce the duplication between this and the script-based approach.
 	pr := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: generateName},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: generateName, Annotations: trackerAnnotations()},
 		Spec:       pd.PipelineRunSpec,
 	}
 	return pr, nil
@@ -54,4 +64,11 @@ func valToString(v ref.Val) pipelinev1.ArrayOrString {
 		return pipelinev1.ArrayOrString{StringVal: val.Value().(string), Type: "string"}
 	}
 	return pipelinev1.ArrayOrString{StringVal: "unknown", Type: "string"}
+}
+
+func trackerAnnotations() map[string]string {
+	return map[string]string{
+		"tekton.dev/git-status":     "true",
+		"tekton.dev/status-context": "tekton-ci",
+	}
 }

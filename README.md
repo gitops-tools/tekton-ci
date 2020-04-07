@@ -7,8 +7,8 @@ It can take a CI definition, similar to the GitLab CI definition, and execute th
 It has two different bits:
 
  * A "pipeline definition" to PipelineRun converter.
- * An HTTP Server that handles Hook requests from GitHub by requesting pipeline
-   files from the incoming repository, and processing them.
+ * An HTTP Server that handles Hook requests from GitHub (and go-scm supported
+   hosting services)  by requesting pipeline files from the incoming repository, and processing them.
 
 ## Building
 
@@ -31,8 +31,7 @@ Flags:
 
 ## Experimenting with this.
 
-The generated PipelineRun has an embedded Pipeline, with Tasks that execute the
-scripts defined in the example pipeline definition.
+The generated PipelineRun has an embedded Pipeline, with Tasks that execute the scripts defined in the example pipeline definition.
 
 It requires a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) to carry state between tasks.
 
@@ -42,7 +41,7 @@ By creating a volume, and executing the example pipeline, it should execute and 
 
 ## HTTP Hook Handler.
 
-This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
+The `deploy` directory includes a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
 
 This needs a recent version of Tekton Pipelines installed, and a simple volume claim (see the example above).
 

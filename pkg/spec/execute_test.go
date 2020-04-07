@@ -1,4 +1,4 @@
-package pipelinerun
+package spec
 
 import (
 	"os"
@@ -26,13 +26,13 @@ func TestExecute(t *testing.T) {
 		GUID: hookGUID,
 	}
 
-	pr, err := Execute(d, hook, "new-pipeline-run")
+	pr, err := Execute(d, hook, "new-pipeline-run-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-", Annotations: trackerAnnotations()},
 		Spec: pipelinev1.PipelineRunSpec{
 			Params: []pipelinev1.Param{
 				pipelinev1.Param{

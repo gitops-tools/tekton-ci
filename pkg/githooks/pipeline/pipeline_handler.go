@@ -11,9 +11,9 @@ import (
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
-	"github.com/bigkevmcd/tekton-ci/pkg/pipelines"
 )
 
 const (
@@ -59,7 +59,7 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr := pipelines.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
+	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)
@@ -76,8 +76,8 @@ func nameFromPullRequest(pr *scm.PullRequestHook) string {
 	return defaultPipelineRunPrefix
 }
 
-func sourceFromPullRequest(pr *scm.PullRequestHook) *pipelines.Source {
-	return &pipelines.Source{
+func sourceFromPullRequest(pr *scm.PullRequestHook) *dsl.Source {
+	return &dsl.Source{
 		RepoURL: pr.Repo.Clone,
 		Ref:     pr.PullRequest.Sha,
 	}

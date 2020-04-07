@@ -12,7 +12,7 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
-	"github.com/bigkevmcd/tekton-ci/pkg/pipelinerun"
+	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 )
 
 const (
@@ -52,13 +52,13 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	parsed, err := pipelinerun.Parse(bytes.NewReader(content))
+	parsed, err := spec.Parse(bytes.NewReader(content))
 	if err != nil {
 		h.log.Errorf("error parsing pipeline definition: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr, err := pipelinerun.Execute(parsed, evt, nameFromPullRequest(evt))
+	pr, err := spec.Execute(parsed, evt, nameFromPullRequest(evt))
 	if err != nil {
 		h.log.Errorf("error executing pipelined definition: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

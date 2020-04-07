@@ -1,4 +1,4 @@
-package pipelines
+package dsl
 
 import (
 	"testing"
@@ -10,14 +10,6 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/google/go-cmp/cmp"
 )
-
-func TestMakeEnv(t *testing.T) {
-	t.Skip()
-}
-
-func TestMakeScriptSteps(t *testing.T) {
-	t.Skip()
-}
 
 func TestMakeGitCloneTask(t *testing.T) {
 	repoURL := "https://github.com/myorg/testing.git"
@@ -243,4 +235,12 @@ func TestContainer(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("Container doesn't match:\n%s", diff)
 	}
+}
+
+func TestMakeEnv(t *testing.T) {
+	t.Skip()
+}
+
+func TestMakeScriptSteps(t *testing.T) {
+	t.Skip()
 }

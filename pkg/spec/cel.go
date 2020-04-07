@@ -1,4 +1,4 @@
-package pipelinerun
+package spec
 
 import (
 	"encoding/json"

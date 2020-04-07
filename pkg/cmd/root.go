@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/pipelines"
+	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 )
 
 func init() {
@@ -38,8 +38,8 @@ func makeRootCmd() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			source := &pipelines.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
-			converted := pipelines.Convert(parsed, viper.GetString("pipelinerun-name"), source)
+			source := &dsl.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
+			converted := dsl.Convert(parsed, viper.GetString("pipelinerun-name"), source)
 
 			d, err := yaml.Marshal(converted)
 			if err != nil {
