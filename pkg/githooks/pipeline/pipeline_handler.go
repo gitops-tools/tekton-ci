@@ -9,17 +9,22 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
+	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
 const (
 	pipelineFilename         = ".tekton_ci.yaml"
 	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
+
+var volumeSize = resource.MustParse("1Gi")
 
 // PipelineHandler implements the GitEventHandler interface and processes
 // .tekton_ci.yaml files in a repository.
@@ -28,12 +33,15 @@ type PipelineHandler struct {
 	log            logger.Logger
 	pipelineClient pipelineclientset.Interface
 	namespace      string
+	volumeCreator  volumes.Creator
+	coreClient     kubernetes.Interface
 }
 
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger.Logger) *PipelineHandler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, coreClient kubernetes.Interface, namespace string, l logger.Logger) *PipelineHandler {
 	return &PipelineHandler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
+		coreClient:     coreClient,
 		log:            l,
 		namespace:      namespace,
 	}
@@ -59,7 +67,21 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt))
+
+	vc, err := h.volumeCreator.Create(volumeSize)
+	if err != nil {
+		h.log.Errorf("error creating volume: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	volume, err := h.coreClient.CoreV1().PersistentVolumeClaims(h.namespace).Create(vc)
+	if err != nil {
+		h.log.Errorf("error creating volume claim: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt), volume.ObjectMeta.Name)
+
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)

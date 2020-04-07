@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,8 +18,10 @@ import (
 	"go.uber.org/zap/zaptest"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
 
@@ -32,9 +35,11 @@ func TestHandlePullRequestEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 	gitClient := git.New(scmClient)
-	fakeKube := fakeclientset.NewSimpleClientset()
+	fakeTektonClient := fakeclientset.NewSimpleClientset()
+	fakeClient := fake.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeKube, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, fakeClient, testNS, logger.Sugar())
+	h.volumeCreator = volumes.New()
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
@@ -48,7 +53,21 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	vc, err := fakeClient.CoreV1().PersistentVolumeClaims(testNS).Get("", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVC, err := h.volumeCreator.Create(volumeSize)
+	wantVC.ObjectMeta.Namespace = testNS
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantVC, vc); diff != "" {
+		t.Fatalf("persistent volume claim incorrect, diff\n%s", diff)
+	}
+
+	log.Printf("KEVIN!!!!! %#v\n", vc)
+	pr, err := fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,9 +95,10 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	gitClient := git.New(scmClient)
-	fakeKube := fakeclientset.NewSimpleClientset()
+	fakeTektonClient := fakeclientset.NewSimpleClientset()
+	fakeClient := fake.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeKube, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, fakeClient, testNS, logger.Sugar())
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
@@ -92,7 +112,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeKube.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when no pipeline definition exists")
 	}

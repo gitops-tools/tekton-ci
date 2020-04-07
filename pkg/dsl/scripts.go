@@ -24,11 +24,9 @@ type Source struct {
 	Ref     string
 }
 
-// Convert takes a Pipelined definition, a name and source, and generates a
+// Convert takes a Pipeline definition, a name and source, and generates a
 // TektonCD PipelineRun with an embedded Pipeline with the tasks to execute.
-//
-// TODO: allow passing in of the persistentClaimName.
-func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source) *pipelinev1.PipelineRun {
+func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeClaimName string) *pipelinev1.PipelineRun {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
@@ -60,7 +58,7 @@ func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source) *pipelin
 				pipelinev1.WorkspaceBinding{
 					Name: workspaceName,
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: persistentClaimName,
+						ClaimName: volumeClaimName,
 					},
 				},
 			},
