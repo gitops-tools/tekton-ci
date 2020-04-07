@@ -38,10 +38,11 @@ It requires a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storag
 
 There is an example [volume.yaml](./examples/volume.yaml).
 
-By creating a volume, and executing the example pipeline, it should execute and
-the PipelineRun will complete.
+By creating a volume, and executing the example pipeline, it should execute and the PipelineRun will complete.
 
 ## HTTP Hook Handler.
+
+This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
 
 This needs a recent version of Tekton Pipelines installed, and a simple volume claim (see the example above).
 
@@ -49,11 +50,16 @@ This needs a recent version of Tekton Pipelines installed, and a simple volume c
 kubectl apply -f deploy/
 ```
 
-This defines a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
-
 After this, create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a pull-request is created.
 
-## Currently understood syntax
+When the handler receives the `pull_request` hook notification, it will try and
+get a configuration file from the repository and process it.
+
+## /pipeline endpoint
+
+This supports a GitLab-CI-like syntax, capable of executing scripts, it uses a [Persistent Volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) to transport the source and output between tasks.
+
+### Currently understood syntax
 
 ```yaml
 # this image is used when executing the script.
@@ -94,18 +100,60 @@ compile:
     - go build -race -ldflags "-extldflags '-static'" -o testing ./cmd/github-tool
 ```
 
+## /pipelinerun endpoint
+
+This supports standard [PipelineRuns](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md) with a wrapper around them to automate extraction of the arguments from the incoming hook body.
+
+The example below, if placed in `.tekton/pull_request.yaml` will trigger a simple script that echoes the SHA of the commit when a pull-request is opened.
+
+The expressions in the `filter` and `paramBindings` use [CEL syntax](https://github.com/google/cel-go), and the `hook` comes from the incoming hook, in the example below, this is a [PullRequestHook](https://github.com/jenkins-x/go-scm/blob/master/scm/webhook.go#L251).
+
+The PipelineRunSpec is a standard PipelineRun [spec](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md#syntax).
+
+The PipelineRun is created with an automatically generated name, and the `paramBindings` will be _added_ to the pipeline run parameters, this makes it easy to use standard pipelines, but with a mixture of hard-coded and dynamic parameters.
+
+```yaml
+filter: hook.Action == 'opened'
+paramBindings:
+  - name: COMMIT_SHA
+    expression: hook.PullRequest.Sha
+pipelineRunSpec:
+  pipelineSpec:
+    params:
+      - name: COMMIT_SHA
+        description: "The commit from the pull_request"
+        type: string
+    tasks:
+      - name: echo-commit
+        taskSpec:
+          params:
+          - name: COMMIT
+            type: string
+          steps:
+            - name: echo
+              image: ubuntu
+              script: |
+                #!/usr/bin/env bash
+                echo "$(params.COMMIT)"
+        params:
+          - name: COMMIT
+            value: $(params.COMMIT_SHA)
+```
+
 ## HTTP server
 
 See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
+ * Better naming for the handlers (pipeline and pipelinerun are not
+   descriptive).
  * Automate volume claims for the script-based DSL.
  * Support more syntax items (extra containers, do something with artifacts).
  * Provide support for calling other Tekton tasks from the script DSL.
  * Support for service-broker bindings.
  * Move away from the bespoke YAML definition to a more structured approach
-   (easier to parse) - this is required for better integration with Tekton
+   (easier to parse) - this might be required for better integration with Tekton
    tasks.
  * Support more events (Push) and actions other than `opened` for the script DSL format.
  * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
