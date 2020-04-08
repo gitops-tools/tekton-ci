@@ -43,7 +43,7 @@ By creating a volume, and executing the example pipeline, it should execute and 
 
 The `deploy` directory includes a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
 
-This needs a recent version of Tekton Pipelines installed, and a simple volume claim (see the example above).
+This needs a recent version of Tekton Pipelines installed, it will automatically create a 1Gi Volume claim per run! and there's nothing currently which cleans this up!
 
 ```shell
 kubectl apply -f deploy/
@@ -147,7 +147,7 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
- * Automate volume claims for the script-based DSL.
+ * ~~Automate volume claims for the script-based DSL.~~
  * Support more syntax items (extra containers, do something with artifacts).
  * Provide support for calling other Tekton tasks from the script DSL.
  * Support for service-broker bindings.
