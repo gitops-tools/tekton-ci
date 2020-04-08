@@ -1,4 +1,4 @@
-package pipeline
+package dsl
 
 import (
 	"bytes"
@@ -10,7 +10,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
@@ -34,14 +33,13 @@ type PipelineHandler struct {
 	pipelineClient pipelineclientset.Interface
 	namespace      string
 	volumeCreator  volumes.Creator
-	coreClient     kubernetes.Interface
 }
 
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, coreClient kubernetes.Interface, namespace string, l logger.Logger) *PipelineHandler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, namespace string, l logger.Logger) *PipelineHandler {
 	return &PipelineHandler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
-		coreClient:     coreClient,
+		volumeCreator:  volumeCreator,
 		log:            l,
 		namespace:      namespace,
 	}
@@ -68,19 +66,13 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		return
 	}
 
-	vc, err := h.volumeCreator.Create(volumeSize)
+	vc, err := h.volumeCreator.Create(h.namespace, volumeSize)
 	if err != nil {
 		h.log.Errorf("error creating volume: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	volume, err := h.coreClient.CoreV1().PersistentVolumeClaims(h.namespace).Create(vc)
-	if err != nil {
-		h.log.Errorf("error creating volume claim: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt), volume.ObjectMeta.Name)
+	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt), vc.ObjectMeta.Name)
 
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {

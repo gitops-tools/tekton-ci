@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -15,8 +16,9 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
-	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipeline"
+	"github.com/bigkevmcd/tekton-ci/pkg/githooks/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipelinerun"
+	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -34,7 +36,12 @@ func makeHTTPCmd() *cobra.Command {
 				log.Fatalf("failed to get in cluster config: %v", err)
 			}
 
-			kubeClient, err := pipelineclientset.NewForConfig(clusterConfig)
+			tektonClient, err := pipelineclientset.NewForConfig(clusterConfig)
+			if err != nil {
+				log.Fatalf("failed to get the versioned client: %v", err)
+			}
+
+			coreClient, err := kubernetes.NewForConfig(clusterConfig)
 			if err != nil {
 				log.Fatalf("failed to get the versioned client: %v", err)
 			}
@@ -42,20 +49,22 @@ func makeHTTPCmd() *cobra.Command {
 			logger, _ := zap.NewProduction()
 			defer logger.Sync() // flushes buffer, if any
 			sugar := logger.Sugar()
+			namespace := viper.GetString("namespace")
 
-			pipelineHandler := pipeline.New(
+			dslHandler := dsl.New(
 				git.New(scmClient),
-				kubeClient,
-				viper.GetString("namespace"),
+				tektonClient,
+				volumes.New(coreClient),
+				namespace,
 				sugar)
 			pipelinerunHandler := pipelinerun.New(
 				git.New(scmClient),
-				kubeClient,
-				viper.GetString("namespace"),
+				tektonClient,
+				namespace,
 				sugar)
 			http.Handle("/pipeline", githooks.New(
 				git.New(scmClient),
-				pipelineHandler,
+				dslHandler,
 				sugar,
 			))
 			http.Handle("/pipelinerun", githooks.New(

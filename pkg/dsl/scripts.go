@@ -24,8 +24,9 @@ type Source struct {
 	Ref     string
 }
 
-// Convert takes a Pipeline definition, a name and source, and generates a
-// TektonCD PipelineRun with an embedded Pipeline with the tasks to execute.
+// Convert takes a Pipeline definition, a name, source and volume claim name,
+// and generates a TektonCD PipelineRun with an embedded Pipeline with the
+// tasks to execute.
 func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeClaimName string) *pipelinev1.PipelineRun {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{

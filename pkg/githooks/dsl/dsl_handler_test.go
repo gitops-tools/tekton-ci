@@ -1,4 +1,4 @@
-package pipeline
+package dsl
 
 import (
 	"bytes"
@@ -37,9 +37,9 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	gitClient := git.New(scmClient)
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
+	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, fakeClient, testNS, logger.Sugar())
-	h.volumeCreator = volumes.New()
+	h := New(gitClient, fakeTektonClient, vc, testNS, logger.Sugar())
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {

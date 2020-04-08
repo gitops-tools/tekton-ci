@@ -7,14 +7,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 var _ Creator = (*SimpleVolumeCreator)(nil)
 
 func TestSimpleVolume(t *testing.T) {
-	c := New()
+	fakeClient := fake.NewSimpleClientset()
+	c := New(fakeClient)
 	size := resource.MustParse("1Gi")
-	v, err := c.Create(size)
+	v, err := c.Create("testing", size)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,6 +25,7 @@ func TestSimpleVolume(t *testing.T) {
 		TypeMeta: volumeTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: namePrefix,
+			Namespace:    "testing",
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			Resources: corev1.ResourceRequirements{
@@ -38,5 +41,13 @@ func TestSimpleVolume(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, v); diff != "" {
 		t.Fatalf("new volume failed: %s\n", diff)
+	}
+
+	created, err := fakeClient.CoreV1().PersistentVolumeClaims("testing").Get("", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, created); diff != "" {
+		t.Fatalf("saved volume was different: %s\n", diff)
 	}
 }

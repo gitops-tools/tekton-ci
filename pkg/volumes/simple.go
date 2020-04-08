@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -19,17 +20,22 @@ var (
 	volumeMode = corev1.PersistentVolumeFilesystem
 )
 
-// New creates and returns a volume creator that creates volumes with a fixed
-// size.
-func New() *SimpleVolumeCreator {
-	return &SimpleVolumeCreator{}
+// New creates and returns a VolumeCreator that creates fixed size, Filesystem
+// based PersistentVolumeClaims.
+func New(c kubernetes.Interface) *SimpleVolumeCreator {
+	return &SimpleVolumeCreator{
+		coreClient: c,
+	}
 }
 
+// SimpleVolumeCreator is an implementation of the Creator interface.
 type SimpleVolumeCreator struct {
+	coreClient kubernetes.Interface
 }
 
-func (s SimpleVolumeCreator) Create(size resource.Quantity) (*corev1.PersistentVolumeClaim, error) {
-	return &corev1.PersistentVolumeClaim{
+// Create impements the Creator interface.
+func (s SimpleVolumeCreator) Create(namespace string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error) {
+	vc := &corev1.PersistentVolumeClaim{
 		TypeMeta: volumeTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: namePrefix,
@@ -45,5 +51,10 @@ func (s SimpleVolumeCreator) Create(size resource.Quantity) (*corev1.PersistentV
 				corev1.ReadWriteMany,
 			},
 		},
-	}, nil
+	}
+	volume, err := s.coreClient.CoreV1().PersistentVolumeClaims(namespace).Create(vc)
+	if err != nil {
+		return nil, err
+	}
+	return volume, nil
 }

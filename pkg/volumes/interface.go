@@ -8,5 +8,5 @@ import (
 // TODO: this should accept a resource.Quantity as the size, and probably
 // extracted from
 type Creator interface {
-	Create(resource.Quantity) (*corev1.PersistentVolumeClaim, error)
+	Create(namespace string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error)
 }
