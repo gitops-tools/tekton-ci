@@ -9,6 +9,12 @@ rules:
   - pipelineruns
   verbs:
   - create
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
