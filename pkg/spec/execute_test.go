@@ -5,9 +5,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
 const (
@@ -31,8 +34,7 @@ func TestExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-", Annotations: trackerAnnotations()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-", Annotations: resources.Annotations("pipelineRun")},
 		Spec: pipelinev1.PipelineRunSpec{
 			Params: []pipelinev1.Param{
 				pipelinev1.Param{
@@ -43,7 +45,7 @@ func TestExecute(t *testing.T) {
 			PipelineSpec: testPipelineSpec,
 		},
 	}
-	if diff := cmp.Diff(want, pr); diff != "" {
+	if diff := cmp.Diff(want, pr, cmpopts.IgnoreFields(pipelinev1.PipelineRun{}, "TypeMeta")); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
 	}
 }
@@ -55,7 +57,6 @@ func readDefinition(t *testing.T, filename string) *PipelineDefinition {
 		t.Fatal(err)
 	}
 	defer f.Close()
-
 	d, err := Parse(f)
 	if err != nil {
 		t.Fatal(err)

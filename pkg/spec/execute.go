@@ -6,7 +6,8 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
 // Execute takes a PipelineDefinition and a hook, and returns a PipelineRun
@@ -47,14 +48,7 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 		}
 		pd.PipelineRunSpec.Params = append(pd.PipelineRunSpec.Params, pipelinev1.Param{Name: v.Name, Value: valToString(evaluated)})
 	}
-
-	// TODO: reduce the duplication between this and the script-based approach.
-	pr := &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: generateName, Annotations: trackerAnnotations()},
-		Spec:       pd.PipelineRunSpec,
-	}
-	return pr, nil
+	return resources.PipelineRun("pipelineRun", generateName, pd.PipelineRunSpec), nil
 }
 
 // TODO: This should probably stringify other ref.Types
