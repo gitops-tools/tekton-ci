@@ -66,17 +66,34 @@ func normaliseStringSlice(vars interface{}) []string {
 }
 
 func parseTask(name string, v interface{}) (*Task, error) {
-	j := &Task{Name: name}
+	t := &Task{Name: name}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
 		case "stage":
-			j.Stage = v.(string)
+			t.Stage = v.(string)
 		case "script":
-			j.Script = normaliseStringSlice(v)
+			t.Script = normaliseStringSlice(v)
+		case "artifacts":
+			artifacts, err := parseArtifacts(k, v)
+			if err != nil {
+				return nil, err
+			}
+			t.Artifacts = artifacts
 		}
 	}
-	if len(j.Script) == 0 {
+	if len(t.Script) == 0 {
 		return nil, fmt.Errorf("invalid task %#v missing script", name)
 	}
-	return j, nil
+	return t, nil
+}
+
+func parseArtifacts(name string, v interface{}) (Artifacts, error) {
+	a := Artifacts{Paths: []string{}}
+	for k, v := range v.(map[string]interface{}) {
+		switch k {
+		case "paths":
+			a.Paths = normaliseStringSlice(v)
+		}
+	}
+	return a, nil
 }

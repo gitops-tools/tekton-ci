@@ -13,6 +13,9 @@ var (
 		Script: []string{
 			`go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`,
 		},
+		Artifacts: Artifacts{
+			Paths: []string{"mybinary"},
+		},
 	}
 
 	formatTask = &Task{

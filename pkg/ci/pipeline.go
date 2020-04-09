@@ -12,9 +12,14 @@ type Pipeline struct {
 
 // Task represents the parsed Task from the Pipeline.
 type Task struct {
-	Name   string
-	Stage  string
-	Script []string
+	Name      string
+	Stage     string
+	Script    []string
+	Artifacts Artifacts
+}
+
+type Artifacts struct {
+	Paths []string
 }
 
 // TasksForStage returns the named jobs for a specific stage.

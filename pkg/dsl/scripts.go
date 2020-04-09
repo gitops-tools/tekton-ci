@@ -18,6 +18,9 @@ const (
 	workspaceBindingName = "source"
 	workspaceSourcePath  = "$(workspaces.source.path)"
 	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
+	// TODO: Where do we get the archive endpoint from?
+	testArchiver        = "quay.io/kmcdermo/s3-archiver"
+	testArchiveEndpoint = "https://example.com/example"
 )
 
 type Source struct {
@@ -39,10 +42,14 @@ func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeCl
 		previous = beforeStepTaskName
 	}
 	for _, name := range p.Stages {
-		for _, jobName := range p.TasksForStage(name) {
-			job := p.Task(jobName)
-			stageTask := makeTaskForStage(job.Name, name, previous, env, p.Image, job.Script)
+		for _, taskName := range p.TasksForStage(name) {
+			task := p.Task(taskName)
+			stageTask := makeTaskForStage(task.Name, name, previous, env, p.Image, task.Script)
 			tasks = append(tasks, stageTask)
+			if len(task.Artifacts.Paths) > 0 {
+				stageTask = makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, task.Artifacts.Paths)
+				tasks = append(tasks, stageTask)
+			}
 			previous = stageTask.Name
 		}
 	}
@@ -108,6 +115,21 @@ func makeScriptTask(runAfter, name string, env []corev1.EnvVar, image string, sc
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   []string{runAfter},
 		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, script)...),
+	}
+}
+
+func makeArchiveArtifactsTask(runAfter, name string, env []corev1.EnvVar, artifacts []string) pipelinev1.PipelineTask {
+	return pipelinev1.PipelineTask{
+		Name:       name,
+		Workspaces: workspacePipelineTaskBindings(),
+		RunAfter:   []string{runAfter},
+		TaskSpec: makeTaskSpec(
+			pipelinev1.Step{
+				Container: container(name+"-archiver", testArchiver,
+					append([]string{"./archiver", "s3", "--url", "https://example.com/example"}, artifacts...),
+					env, workspaceSourcePath),
+			},
+		),
 	}
 }
 
