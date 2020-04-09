@@ -18,9 +18,6 @@ const (
 	workspaceBindingName = "source"
 	workspaceSourcePath  = "$(workspaces.source.path)"
 	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
-	// TODO: Where do we get the archive endpoint from?
-	testArchiver        = "quay.io/kmcdermo/s3-archiver"
-	testArchiveEndpoint = "https://example.com/example"
 )
 
 type Source struct {
@@ -31,7 +28,7 @@ type Source struct {
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
-func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeClaimName string) *pipelinev1.PipelineRun {
+func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName string) *pipelinev1.PipelineRun {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
@@ -47,7 +44,7 @@ func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeCl
 			stageTask := makeTaskForStage(task.Name, name, previous, env, p.Image, task.Script)
 			tasks = append(tasks, stageTask)
 			if len(task.Artifacts.Paths) > 0 {
-				stageTask = makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, task.Artifacts.Paths)
+				stageTask = makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, config, task.Artifacts.Paths)
 				tasks = append(tasks, stageTask)
 			}
 			previous = stageTask.Name
@@ -61,7 +58,7 @@ func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeCl
 
 	return &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: pipelineRunNamePrefix, Annotations: resources.Annotations("dsl")},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: config.PipelineRunPrefix, Annotations: resources.Annotations("dsl")},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{
@@ -118,15 +115,15 @@ func makeScriptTask(runAfter, name string, env []corev1.EnvVar, image string, sc
 	}
 }
 
-func makeArchiveArtifactsTask(runAfter, name string, env []corev1.EnvVar, artifacts []string) pipelinev1.PipelineTask {
+func makeArchiveArtifactsTask(runAfter, name string, env []corev1.EnvVar, config *Configuration, artifacts []string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:       name,
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   []string{runAfter},
 		TaskSpec: makeTaskSpec(
 			pipelinev1.Step{
-				Container: container(name+"-archiver", testArchiver,
-					append([]string{"./archiver", "s3", "--url", "https://example.com/example"}, artifacts...),
+				Container: container(name+"-archiver", config.ArchiverImage,
+					append([]string{"./archiver", "--url", config.ArchiveURL}, artifacts...),
 					env, workspaceSourcePath),
 			},
 		),

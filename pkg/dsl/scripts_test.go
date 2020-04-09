@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"log"
 	"testing"
 
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -11,6 +10,12 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 	"github.com/google/go-cmp/cmp"
+)
+
+const (
+	testPipelineRunPrefix = "my-pipeline-run-"
+	testArchiverImage     = "quay.io/testing/testing"
+	testArchiveURL        = "https://example/com/testing"
 )
 
 func TestMakeGitCloneTask(t *testing.T) {
@@ -137,9 +142,7 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr := Convert(p, "my-pipeline-run-", source, "my-volume-claim-123")
-
-	log.Printf("KEVIN!!!! %#v\n", pr.Spec.PipelineSpec.Tasks[4])
+	pr := Convert(p, testConfiguration(), source, "my-volume-claim-123")
 
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
@@ -213,7 +216,7 @@ func TestConvert(t *testing.T) {
 						TaskSpec: &pipelinev1.TaskSpec{
 							Steps: []pipelinev1.Step{
 								pipelinev1.Step{
-									Container: container("compile-archiver-archiver", "quay.io/kmcdermo/s3-archiver", []string{"./archiver", "s3", "--url", "https://example.com/example", "my-test-binary"}, testEnv, workspaceSourcePath),
+									Container: container("compile-archiver-archiver", testArchiverImage, []string{"./archiver", "--url", testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
 								},
 							},
 							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
@@ -253,4 +256,12 @@ func TestMakeEnv(t *testing.T) {
 
 func TestMakeScriptSteps(t *testing.T) {
 	t.Skip()
+}
+
+func testConfiguration() *Configuration {
+	return &Configuration{
+		PipelineRunPrefix: testPipelineRunPrefix,
+		ArchiverImage:     testArchiverImage,
+		ArchiveURL:        testArchiveURL,
+	}
 }

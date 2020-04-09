@@ -12,40 +12,42 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
 const (
-	pipelineFilename         = ".tekton_ci.yaml"
-	defaultPipelineRunPrefix = "test-pipelinerun-"
+	pipelineFilename = ".tekton_ci.yaml"
 )
 
 var defaultVolumeSize = resource.MustParse("1Gi")
 
-// PipelineHandler implements the GitEventHandler interface and processes
+// Handler implements the GitEventHandler interface and processes
 // .tekton_ci.yaml files in a repository.
-type PipelineHandler struct {
+type Handler struct {
 	scmClient      git.SCM
 	log            logger.Logger
 	pipelineClient pipelineclientset.Interface
 	namespace      string
 	volumeCreator  volumes.Creator
+	config         *Configuration
 }
 
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, namespace string, l logger.Logger) *PipelineHandler {
-	return &PipelineHandler{
+// New creates and returns a new implementation GitEventHandler capable of
+// converting ci.Pipelines into PipelineRuns.
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, cfg *Configuration, namespace string, l logger.Logger) *Handler {
+	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
 		volumeCreator:  volumeCreator,
 		log:            l,
+		config:         cfg,
 		namespace:      namespace,
 	}
 }
 
-func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)
@@ -72,7 +74,7 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr := dsl.Convert(parsed, nameFromPullRequest(evt), sourceFromPullRequest(evt), vc.ObjectMeta.Name)
+	pr := Convert(parsed, h.config, sourceFromPullRequest(evt), vc.ObjectMeta.Name)
 
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
@@ -86,12 +88,8 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 	h.log.Infow("completed request")
 }
 
-func nameFromPullRequest(pr *scm.PullRequestHook) string {
-	return defaultPipelineRunPrefix
-}
-
-func sourceFromPullRequest(pr *scm.PullRequestHook) *dsl.Source {
-	return &dsl.Source{
+func sourceFromPullRequest(pr *scm.PullRequestHook) *Source {
+	return &Source{
 		RepoURL: pr.Repo.Clone,
 		Ref:     pr.PullRequest.Sha,
 	}

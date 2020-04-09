@@ -39,7 +39,7 @@ func makeRootCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 			source := &dsl.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
-			converted := dsl.Convert(parsed, viper.GetString("pipelinerun-name"), source, "shared-task-storage")
+			converted := dsl.Convert(parsed, newDSLConfig(), source, "shared-task-storage")
 
 			d, err := yaml.Marshal(converted)
 			if err != nil {
@@ -56,12 +56,6 @@ func makeRootCmd() *cobra.Command {
 	logIfError(cmd.MarkFlagRequired("pipeline-file"))
 	logIfError(viper.BindPFlag("pipeline-file", cmd.Flags().Lookup("pipeline-file")))
 	cmd.Flags().String(
-		"pipelinerun-name",
-		"test-pipelinerun",
-		"inserted into the generated PipelineRun resource",
-	)
-	logIfError(viper.BindPFlag("pipelinerun-name", cmd.Flags().Lookup("pipelinerun-name")))
-	cmd.Flags().String(
 		"repository-url",
 		"",
 		"e.g. https://github.com/my-org/my-repo.git",
@@ -75,6 +69,7 @@ func makeRootCmd() *cobra.Command {
 	)
 	logIfError(viper.BindPFlag("branch", cmd.Flags().Lookup("branch")))
 	logIfError(cmd.MarkFlagRequired("branch"))
+	bindConfigurationFlags(cmd)
 	cmd.AddCommand(makeHTTPCmd())
 	return cmd
 }

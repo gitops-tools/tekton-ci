@@ -40,7 +40,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
@@ -112,7 +112,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {

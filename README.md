@@ -97,6 +97,13 @@ compile:
   stage: build
   script:
     - go build -race -ldflags "-extldflags '-static'" -o testing ./cmd/github-tool
+  # If artifacts are specified as part of a Task, an extra container is
+  # scheduled to execute after the task, which is executed in the same volume.
+  # this will receive the list of artifacts and can upload the artifact
+  # somewhere - admittedly this is a bit vague.
+  artifacts:
+    paths:
+      - github-tool
 ```
 
 ## /pipelinerun endpoint
@@ -148,7 +155,8 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * ~~Automate volume claims for the script-based DSL.~~
- * Support more syntax items (extra containers, do something with artifacts).
+ * Support more syntax items (extra containers)
+ * Work out how to specify the archiving mechanism (which image?, params?)
  * Provide support for calling other Tekton tasks from the script DSL.
  * Support for service-broker bindings.
  * Move away from the bespoke YAML definition to a more structured approach

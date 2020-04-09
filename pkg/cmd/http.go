@@ -14,11 +14,15 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
-	"github.com/bigkevmcd/tekton-ci/pkg/githooks/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipelinerun"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
+)
+
+const (
+	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -33,28 +37,29 @@ func makeHTTPCmd() *cobra.Command {
 
 			clusterConfig, err := rest.InClusterConfig()
 			if err != nil {
-				log.Fatalf("failed to get in cluster config: %v", err)
+				log.Fatalf("failed to create in-cluster config: %v", err)
 			}
 
 			tektonClient, err := pipelineclientset.NewForConfig(clusterConfig)
 			if err != nil {
-				log.Fatalf("failed to get the versioned client: %v", err)
+				log.Fatalf("failed to create the tekton client: %v", err)
 			}
 
 			coreClient, err := kubernetes.NewForConfig(clusterConfig)
 			if err != nil {
-				log.Fatalf("failed to get the versioned client: %v", err)
+				log.Fatalf("failed to create the core client: %v", err)
 			}
 
 			logger, _ := zap.NewProduction()
 			defer logger.Sync() // flushes buffer, if any
 			sugar := logger.Sugar()
-			namespace := viper.GetString("namespace")
 
+			namespace := viper.GetString("namespace")
 			dslHandler := dsl.New(
 				git.New(scmClient),
 				tektonClient,
 				volumes.New(coreClient),
+				newDSLConfig(),
 				namespace,
 				sugar)
 			pipelinerunHandler := pipelinerun.New(
@@ -97,5 +102,37 @@ func makeHTTPCmd() *cobra.Command {
 		"namespace to execute PipelineRuns in",
 	)
 	logIfError(viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace")))
+
+	bindConfigurationFlags(cmd)
 	return cmd
+}
+
+func newDSLConfig() *dsl.Configuration {
+	return &dsl.Configuration{
+		ArchiverImage:     viper.GetString("archiver-image"),
+		ArchiveURL:        viper.GetString("archive-url"),
+		PipelineRunPrefix: viper.GetString("pipeline-run-prefix"),
+	}
+}
+
+func bindConfigurationFlags(cmd *cobra.Command) {
+	cmd.Flags().String(
+		"archiver-image",
+		"",
+		"image to execute for archiving artifacts",
+	)
+	logIfError(viper.BindPFlag("archiver-image", cmd.Flags().Lookup("archiver-image")))
+
+	cmd.Flags().String(
+		"archive-url",
+		"",
+		"passed to the archiver for configuration",
+	)
+	logIfError(viper.BindPFlag("archive-url", cmd.Flags().Lookup("archive-url")))
+	cmd.Flags().String(
+		"pipelinerun-prefix",
+		"test-pipelinerun-",
+		"used for the generateName in the generated PipelineRuns",
+	)
+	logIfError(viper.BindPFlag("pipelinerun-prefix", cmd.Flags().Lookup("pipelinerun-prefix")))
 }
