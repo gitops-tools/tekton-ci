@@ -113,30 +113,11 @@ func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
 
 // TODO use uuid to generate the Delivery ID.
 func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, readFixture(t, fixture)))
+	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
 	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-GitHub-Event", eventType)
 	return req
-}
-
-func readFixture(t *testing.T, filename string) map[string]interface{} {
-	t.Helper()
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to read %s: %s", filename, err)
-	}
-	return unmarshal(t, b)
-}
-
-func unmarshal(t *testing.T, b []byte) map[string]interface{} {
-	t.Helper()
-	result := map[string]interface{}{}
-	err := json.Unmarshal(b, &result)
-	if err != nil {
-		t.Fatalf("failed to unmarshal  %s", err)
-	}
-	return result
 }
 
 func mustReadBody(t *testing.T, req *http.Response) []byte {

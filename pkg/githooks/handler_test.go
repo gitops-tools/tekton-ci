@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -71,24 +70,11 @@ func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
 
 // TODO use uuid to generate the Delivery ID.
 func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, readFixture(t, fixture)))
+	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
 	req.Header.Add("X-GitHub-Delivery", deliveryID)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-GitHub-Event", eventType)
 	return req
-}
-
-func readFixture(t *testing.T, filename string) map[string]interface{} {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to read %s: %s", filename, err)
-	}
-	result := map[string]interface{}{}
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		t.Fatalf("failed to unmarshal %s: %s", filename, err)
-	}
-	return result
 }
 
 type mockEventHandler struct {

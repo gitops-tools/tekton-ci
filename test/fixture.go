@@ -14,10 +14,16 @@ func ReadJSONFixture(t *testing.T, filename string) map[string]interface{} {
 	if err != nil {
 		t.Fatalf("failed to read %s: %s", filename, err)
 	}
+	return UnmarshalJSON(t, b)
+}
+
+// UnmarshalJSON
+func UnmarshalJSON(t *testing.T, b []byte) map[string]interface{} {
+	t.Helper()
 	result := map[string]interface{}{}
-	err = json.Unmarshal(b, &result)
+	err := json.Unmarshal(b, &result)
 	if err != nil {
-		t.Fatalf("failed to unmarshal %s: %s", filename, err)
+		t.Fatalf("failed to unmarshal  %s", err)
 	}
 	return result
 }

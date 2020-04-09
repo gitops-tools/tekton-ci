@@ -12,6 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+
+	"github.com/bigkevmcd/tekton-ci/test"
 )
 
 func TestFileContents(t *testing.T) {
@@ -48,7 +50,7 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 	}
 }
 
-func TestParsewebhook(t *testing.T) {
+func TestParseWebhook(t *testing.T) {
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
 	defer as.Close()
 	req := makeHookRequest(t, "testdata/push_hook.json", "push")
@@ -82,22 +84,9 @@ func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server 
 	}))
 }
 
-func readFixture(t *testing.T, filename string) map[string]interface{} {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to read %s: %s", filename, err)
-	}
-	result := map[string]interface{}{}
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		t.Fatalf("failed to unmarshal %s: %s", filename, err)
-	}
-	return result
-}
-
 // TODO use uuid to generate the Delivery ID.
 func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, readFixture(t, fixture)))
+	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
 	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-GitHub-Event", eventType)

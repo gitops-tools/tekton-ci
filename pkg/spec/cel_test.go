@@ -3,16 +3,17 @@ package spec
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/jenkins-x/go-scm/scm/factory"
+
+	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/test"
 )
 
 func TestExpressionEvaluation(t *testing.T) {
@@ -125,7 +126,7 @@ func makeHookFromFixture(t *testing.T, filename, eventType string) interface{} {
 
 // TODO use uuid to generate the Delivery ID.
 func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, readFixture(t, fixture)))
+	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
 	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-GitHub-Event", eventType)
@@ -147,17 +148,4 @@ func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
 		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
 	}
 	return bytes.NewBuffer(b)
-}
-
-func readFixture(t *testing.T, filename string) map[string]interface{} {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to read %s: %s", filename, err)
-	}
-	result := map[string]interface{}{}
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		t.Fatalf("failed to unmarshal %s: %s", filename, err)
-	}
-	return result
 }
