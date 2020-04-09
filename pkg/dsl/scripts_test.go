@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -143,18 +144,18 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr := Convert(p, "my-pipeline-run-", source)
+	pr := Convert(p, "my-pipeline-run-", source, "my-volume-claim-123")
 
 	testEnv := makeEnv(p.Variables)
 	want := &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "my-pipeline-run-", Annotations: trackerAnnotations()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "my-pipeline-run-", Annotations: resources.Annotations("dsl")},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{
 					Name: "git-checkout",
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "shared-task-storage",
+						ClaimName: "my-volume-claim-123",
 					},
 				},
 			},

@@ -17,7 +17,7 @@ var (
 		APIVersion: "v1",
 	}
 
-	volumeMode = corev1.PersistentVolumeFilesystem
+	SimpleVolumeMode = corev1.PersistentVolumeFilesystem
 )
 
 // New creates and returns a VolumeCreator that creates fixed size, Filesystem
@@ -46,7 +46,7 @@ func (s SimpleVolumeCreator) Create(namespace string, size resource.Quantity) (*
 					"storage": size,
 				},
 			},
-			VolumeMode: &volumeMode,
+			VolumeMode: &SimpleVolumeMode,
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteMany,
 			},

@@ -5,17 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -53,20 +54,32 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	vc, err := fakeClient.CoreV1().PersistentVolumeClaims(testNS).Get("", metav1.GetOptions{})
+	claim, err := fakeClient.CoreV1().PersistentVolumeClaims(testNS).Get("", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantVC, err := h.volumeCreator.Create(volumeSize)
-	wantVC.ObjectMeta.Namespace = testNS
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(wantVC, vc); diff != "" {
-		t.Fatalf("persistent volume claim incorrect, diff\n%s", diff)
+	// TODO: This should probably be a call to a function in volumes.
+	wantClaim := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "simple-volume-",
+			Namespace:    testNS,
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					"storage": defaultVolumeSize,
+				},
+			},
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteMany,
+			},
+			VolumeMode: &volumes.SimpleVolumeMode,
+		},
 	}
 
-	log.Printf("KEVIN!!!!! %#v\n", vc)
+	if diff := cmp.Diff(wantClaim, claim, cmpopts.IgnoreFields(corev1.PersistentVolumeClaim{}, "TypeMeta")); diff != "" {
+		t.Fatalf("persistent volume claim incorrect, diff\n%s", diff)
+	}
 	pr, err := fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -97,8 +110,9 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	gitClient := git.New(scmClient)
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
+	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, fakeClient, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, testNS, logger.Sugar())
 	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
@@ -129,24 +143,11 @@ func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
 
 // TODO use uuid to generate the Delivery ID.
 func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, readFixture(t, fixture)))
+	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
 	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-GitHub-Event", eventType)
 	return req
-}
-
-func readFixture(t *testing.T, filename string) map[string]interface{} {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("failed to read %s: %s", filename, err)
-	}
-	result := map[string]interface{}{}
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		t.Fatalf("failed to unmarshal %s: %s", filename, err)
-	}
-	return result
 }
 
 func mustReadBody(t *testing.T, req *http.Response) []byte {

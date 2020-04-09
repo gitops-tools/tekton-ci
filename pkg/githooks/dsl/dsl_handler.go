@@ -23,7 +23,7 @@ const (
 	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
-var volumeSize = resource.MustParse("1Gi")
+var defaultVolumeSize = resource.MustParse("1Gi")
 
 // PipelineHandler implements the GitEventHandler interface and processes
 // .tekton_ci.yaml files in a repository.
@@ -66,7 +66,7 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		return
 	}
 
-	vc, err := h.volumeCreator.Create(h.namespace, volumeSize)
+	vc, err := h.volumeCreator.Create(h.namespace, defaultVolumeSize)
 	if err != nil {
 		h.log.Errorf("error creating volume: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
 const (
@@ -53,7 +54,7 @@ func Convert(p *ci.Pipeline, pipelineRunNamePrefix string, src *Source, volumeCl
 
 	return &pipelinev1.PipelineRun{
 		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: pipelineRunNamePrefix, Annotations: trackerAnnotations()},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: pipelineRunNamePrefix, Annotations: resources.Annotations("dsl")},
 		Spec: pipelinev1.PipelineRunSpec{
 			Workspaces: []pipelinev1.WorkspaceBinding{
 				pipelinev1.WorkspaceBinding{
@@ -147,13 +148,6 @@ func makeEnv(m map[string]string) []corev1.EnvVar {
 	}
 	vars = append(vars, corev1.EnvVar{Name: "CI_PROJECT_DIR", Value: workspaceSourcePath})
 	return vars
-}
-
-func trackerAnnotations() map[string]string {
-	return map[string]string{
-		"tekton.dev/git-status":     "true",
-		"tekton.dev/status-context": "tekton-ci",
-	}
 }
 
 func container(name, image string, command []string, env []corev1.EnvVar, workDir string) corev1.Container {

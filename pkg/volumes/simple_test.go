@@ -33,7 +33,7 @@ func TestSimpleVolume(t *testing.T) {
 					"storage": size,
 				},
 			},
-			VolumeMode: &volumeMode,
+			VolumeMode: &SimpleVolumeMode,
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteMany,
 			},
