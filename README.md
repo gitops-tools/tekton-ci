@@ -152,16 +152,20 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
+ * Support private Git repositories.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
- * ~~Automate volume claims for the script-based DSL.~~
- * Support more syntax items (extra containers)
- * Work out how to specify the archiving mechanism (which image?, params?)
+ * Support more syntax items (extra containers, saving and restoring the cache)
+ * Fix parallel running of tasks in the same stage
+ * Configuration for archiving - currently spawns an image with a URL, how to
+   do configuration for this?
  * Provide support for calling other Tekton tasks from the script DSL.
  * Support for service-broker bindings.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
  * Support more events (Push) and actions other than `opened` for the script DSL format.
+ * Filtering of the events (only pushes to "master" for example).
+ * ~~Automate volume claims for the script-based DSL.~~
  * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
  * ~~HTTP hook endpoint to trigger pipelineruns automatically~~
