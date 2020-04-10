@@ -8,6 +8,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const DefaultStage = "default"
+
 // Parse decodes YAML describing a CI pipeline and returns the configuration.
 func Parse(in io.Reader) (*Pipeline, error) {
 	body, err := ioutil.ReadAll(in)
@@ -31,13 +33,13 @@ func parseRaw(raw map[string]interface{}) (*Pipeline, error) {
 		case "image":
 			cfg.Image = v.(string)
 		case "variables":
-			cfg.Variables = normaliseStringMap(v)
+			cfg.Variables = stringMap(v)
 		case "before_script":
-			cfg.BeforeScript = normaliseStringSlice(v)
+			cfg.BeforeScript = stringSlice(v)
 		case "after_script":
-			cfg.AfterScript = normaliseStringSlice(v)
+			cfg.AfterScript = stringSlice(v)
 		case "stages":
-			cfg.Stages = normaliseStringSlice(v)
+			cfg.Stages = stringSlice(v)
 		default:
 			task, err := parseTask(k, v)
 			if err != nil {
@@ -46,10 +48,17 @@ func parseRaw(raw map[string]interface{}) (*Pipeline, error) {
 			cfg.Tasks = append(cfg.Tasks, task)
 		}
 	}
+	applyDefaultsToPipeline(cfg)
 	return cfg, nil
 }
 
-func normaliseStringMap(vars interface{}) map[string]string {
+func applyDefaultsToPipeline(p *Pipeline) {
+	if len(p.Stages) == 0 {
+		p.Stages = findStages(p.Tasks)
+	}
+}
+
+func stringMap(vars interface{}) map[string]string {
 	newVars := map[string]string{}
 	for k, v := range vars.(map[string]interface{}) {
 		newVars[k] = v.(string)
@@ -57,7 +66,7 @@ func normaliseStringMap(vars interface{}) map[string]string {
 	return newVars
 }
 
-func normaliseStringSlice(vars interface{}) []string {
+func stringSlice(vars interface{}) []string {
 	strings := []string{}
 	for _, v := range vars.([]interface{}) {
 		strings = append(strings, v.(string))
@@ -72,7 +81,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 		case "stage":
 			t.Stage = v.(string)
 		case "script":
-			t.Script = normaliseStringSlice(v)
+			t.Script = stringSlice(v)
 		case "artifacts":
 			artifacts, err := parseArtifacts(k, v)
 			if err != nil {
@@ -84,6 +93,9 @@ func parseTask(name string, v interface{}) (*Task, error) {
 	if len(t.Script) == 0 {
 		return nil, fmt.Errorf("invalid task %#v missing script", name)
 	}
+	if t.Stage == "" {
+		t.Stage = DefaultStage
+	}
 	return t, nil
 }
 
@@ -92,8 +104,23 @@ func parseArtifacts(name string, v interface{}) (Artifacts, error) {
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
 		case "paths":
-			a.Paths = normaliseStringSlice(v)
+			a.Paths = stringSlice(v)
 		}
 	}
 	return a, nil
+}
+
+func findStages(tasks []*Task) []string {
+	foundStages := map[string]bool{}
+	for _, t := range tasks {
+		foundStages[t.Stage] = true
+	}
+	stages := []string{}
+	for k, _ := range foundStages {
+		stages = append(stages, k)
+	}
+	if len(stages) > 0 {
+		return stages
+	}
+	return []string{DefaultStage}
 }

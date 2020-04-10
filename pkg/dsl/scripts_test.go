@@ -15,14 +15,14 @@ const (
 	testPipelineRunPrefix = "my-pipeline-run-"
 	testArchiverImage     = "quay.io/testing/testing"
 	testArchiveURL        = "https://example/com/testing"
+	testRepoURL           = "https://github.com/myorg/testing.git"
 )
 
 func TestMakeGitCloneTask(t *testing.T) {
-	repoURL := "https://github.com/myorg/testing.git"
 	env := []corev1.EnvVar{
 		{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
 	}
-	task := makeGitCloneTask(env, &Source{RepoURL: repoURL, Ref: "master"})
+	task := makeGitCloneTask(env, &Source{RepoURL: testRepoURL, Ref: "master"})
 
 	want := pipelinev1.PipelineTask{
 		Name: gitCloneTaskName,
@@ -40,7 +40,7 @@ func TestMakeGitCloneTask(t *testing.T) {
 					Container: corev1.Container{
 						Name:    "git-clone",
 						Image:   "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init",
-						Command: []string{"/ko-app/git-init", "-url", repoURL, "-revision", "master", "-path", workspaceSourcePath},
+						Command: []string{"/ko-app/git-init", "-url", testRepoURL, "-revision", "master", "-path", workspaceSourcePath},
 						Env: []corev1.EnvVar{
 							corev1.EnvVar{
 								Name:  "CI_PROJECT_DIR",
@@ -69,7 +69,7 @@ func TestMakeScriptTask(t *testing.T) {
 		{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
 	}
 
-	task := makeScriptTask(gitCloneTaskName, "test-script-task", env, image, beforeScript)
+	task := makeScriptTask("test-script-task", []string{gitCloneTaskName}, env, image, beforeScript)
 	want := pipelinev1.PipelineTask{
 		Name:     "test-script-task",
 		RunAfter: []string{gitCloneTaskName},
@@ -101,7 +101,6 @@ func TestMakeScriptTask(t *testing.T) {
 	}
 }
 
-// TODO: PersistentVolumeClaim and name
 func TestConvert(t *testing.T) {
 	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "master"}
 	p := &ci.Pipeline{
@@ -157,7 +156,7 @@ func TestConvert(t *testing.T) {
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Tasks: []pipelinev1.PipelineTask{
 				makeGitCloneTask(testEnv, source),
-				makeScriptTask(gitCloneTaskName, beforeStepTaskName, testEnv, p.Image, p.BeforeScript),
+				makeScriptTask(beforeStepTaskName, []string{gitCloneTaskName}, testEnv, p.Image, p.BeforeScript),
 				pipelinev1.PipelineTask{
 					Name: "format-stage-test",
 					TaskSpec: &pipelinev1.TaskSpec{
@@ -218,7 +217,7 @@ func TestConvert(t *testing.T) {
 						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
 					},
 				},
-				makeScriptTask("compile-archiver", afterStepTaskName, testEnv, p.Image, p.AfterScript),
+				makeScriptTask(afterStepTaskName, []string{"compile-archiver"}, testEnv, p.Image, p.AfterScript),
 			},
 			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 		},

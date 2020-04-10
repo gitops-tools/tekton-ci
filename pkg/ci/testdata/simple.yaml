@@ -1,0 +1,5 @@
+image: golang:latest
+
+format:
+  script:
+    - echo "testing"

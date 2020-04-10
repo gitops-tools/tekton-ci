@@ -18,9 +18,20 @@ func TestParse(t *testing.T) {
 		{"testdata/after-script-example.yaml", &Pipeline{
 			Image:       "golang:latest",
 			AfterScript: []string{`echo "testing"`},
+			Stages:      []string{"test"},
 			Tasks: []*Task{
 				&Task{Name: "format",
 					Stage:  "test",
+					Script: []string{`echo "testing"`},
+				},
+			},
+		}},
+		{"testdata/simple.yaml", &Pipeline{
+			Image:  "golang:latest",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				&Task{Name: "format",
+					Stage:  DefaultStage,
 					Script: []string{`echo "testing"`},
 				},
 			},

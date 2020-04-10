@@ -31,10 +31,10 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
 	}
-	previous := gitCloneTaskName
+	previous := []string{gitCloneTaskName}
 	if len(p.BeforeScript) > 0 {
-		tasks = append(tasks, makeScriptTask(gitCloneTaskName, beforeStepTaskName, env, p.Image, p.BeforeScript))
-		previous = beforeStepTaskName
+		tasks = append(tasks, makeScriptTask(beforeStepTaskName, previous, env, p.Image, p.BeforeScript))
+		previous = []string{beforeStepTaskName}
 	}
 	for _, name := range p.Stages {
 		for _, taskName := range p.TasksForStage(name) {
@@ -45,12 +45,11 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 				stageTask = makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, config, task.Artifacts.Paths)
 				tasks = append(tasks, stageTask)
 			}
-			previous = stageTask.Name
+			previous = []string{stageTask.Name}
 		}
 	}
-
 	if len(p.AfterScript) > 0 {
-		tasks = append(tasks, makeScriptTask(previous, afterStepTaskName, env, p.Image, p.AfterScript))
+		tasks = append(tasks, makeScriptTask(afterStepTaskName, previous, env, p.Image, p.AfterScript))
 	}
 
 	spec := pipelinev1.PipelineRunSpec{
@@ -74,11 +73,11 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec)
 }
 
-func makeTaskForStage(job, stage, previous string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
+func makeTaskForStage(job, stage string, runAfter []string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:       job + "-stage-" + stage,
 		Workspaces: workspacePipelineTaskBindings(),
-		RunAfter:   []string{previous},
+		RunAfter:   runAfter,
 		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, script)...),
 	}
 }
@@ -100,20 +99,20 @@ func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask 
 	}
 }
 
-func makeScriptTask(runAfter, name string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
+func makeScriptTask(name string, runAfter []string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:       name,
 		Workspaces: workspacePipelineTaskBindings(),
-		RunAfter:   []string{runAfter},
+		RunAfter:   runAfter,
 		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, script)...),
 	}
 }
 
-func makeArchiveArtifactsTask(runAfter, name string, env []corev1.EnvVar, config *Configuration, artifacts []string) pipelinev1.PipelineTask {
+func makeArchiveArtifactsTask(runAfter []string, name string, env []corev1.EnvVar, config *Configuration, artifacts []string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:       name,
 		Workspaces: workspacePipelineTaskBindings(),
-		RunAfter:   []string{runAfter},
+		RunAfter:   runAfter,
 		TaskSpec: makeTaskSpec(
 			pipelinev1.Step{
 				Container: container(name+"-archiver", config.ArchiverImage,
