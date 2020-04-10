@@ -37,6 +37,7 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 		previous = []string{beforeStepTaskName}
 	}
 	for _, name := range p.Stages {
+		stageTasks := []string{}
 		for _, taskName := range p.TasksForStage(name) {
 			task := p.Task(taskName)
 			stageTask := makeTaskForStage(task.Name, name, previous, env, p.Image, task.Script)
@@ -45,8 +46,9 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 				stageTask = makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, config, task.Artifacts.Paths)
 				tasks = append(tasks, stageTask)
 			}
-			previous = []string{stageTask.Name}
+			stageTasks = append(stageTasks, stageTask.Name)
 		}
+		previous = stageTasks
 	}
 	if len(p.AfterScript) > 0 {
 		tasks = append(tasks, makeScriptTask(afterStepTaskName, previous, env, p.Image, p.AfterScript))

@@ -11,6 +11,11 @@ import (
 const DefaultStage = "default"
 
 // Parse decodes YAML describing a CI pipeline and returns the configuration.
+//
+// Decoded tasks are given put into the "default" Stage.
+//
+// If no explicit ordering of the Stages is provided, they're subject to hash
+// ordering.
 func Parse(in io.Reader) (*Pipeline, error) {
 	body, err := ioutil.ReadAll(in)
 	if err != nil {
