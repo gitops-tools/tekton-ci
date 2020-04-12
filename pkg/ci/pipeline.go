@@ -16,10 +16,16 @@ type Task struct {
 	Stage     string
 	Script    []string
 	Artifacts Artifacts
+	Rules     []Rule
 }
 
 type Artifacts struct {
 	Paths []string
+}
+
+type Rule struct {
+	If   string
+	When string
 }
 
 // TasksForStage returns the named jobs for a specific stage.

@@ -40,3 +40,16 @@ func (h *HookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.eventHandler.PullRequest(r.Context(), evt, w)
 	}
 }
+
+func isAction(evt *scm.PullRequestHook, acts ...scm.Action) bool {
+	for _, a := range acts {
+		if evt.Action == a {
+			return true
+		}
+	}
+	return false
+}
+
+// if !isAction(evt, scm.ActionOpen, scm.ActionSync) {
+// 	return
+// }

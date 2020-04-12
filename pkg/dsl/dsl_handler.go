@@ -47,20 +47,8 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCr
 	}
 }
 
-func isAction(evt *scm.PullRequestHook, acts ...scm.Action) bool {
-	for _, a := range acts {
-		if evt.Action == a {
-			return true
-		}
-	}
-	return false
-}
-
 // PullRequest implements the GitEventHandler interface.
 func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
-	if !isAction(evt, scm.ActionOpen, scm.ActionSync) {
-		return
-	}
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)

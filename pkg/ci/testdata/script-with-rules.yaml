@@ -1,0 +1,10 @@
+image: golang:latest
+
+format:
+  script:
+    - echo "testing"
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+      when: always
+    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature/'
+      when: manual

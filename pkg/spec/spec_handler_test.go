@@ -23,7 +23,7 @@ import (
 
 const testNS = "testing"
 
-func TestHandlePullRequestEvent(t *testing.T) {
+func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton/pull_request.yaml", "refs/pull/2/head", "testdata/content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))

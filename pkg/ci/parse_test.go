@@ -36,6 +36,26 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/script-with-rules.yaml", &Pipeline{
+			Image:  "golang:latest",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				&Task{Name: "format",
+					Stage:  DefaultStage,
+					Script: []string{`echo "testing"`},
+					Rules: []Rule{
+						Rule{
+							If:   `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"`,
+							When: "always",
+						},
+						Rule{
+							If:   `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature/`,
+							When: "manual",
+						},
+					},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {
@@ -62,7 +82,7 @@ func TestParseBadFiles(t *testing.T) {
 		filename string
 		errMsg   string
 	}{
-		{"testdata/bad-task-no-script.yaml", `invalid task "format" missing script`},
+		{"testdata/bad-task-no-script.yaml", `invalid task "format": missing script`},
 	}
 
 	for _, tt := range parseTests {

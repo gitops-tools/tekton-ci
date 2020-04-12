@@ -87,8 +87,14 @@ func parseTask(name string, v interface{}) (*Task, error) {
 			t.Stage = v.(string)
 		case "script":
 			t.Script = stringSlice(v)
+		case "rules":
+			rules, err := parseRules(v)
+			if err != nil {
+				return nil, err
+			}
+			t.Rules = rules
 		case "artifacts":
-			artifacts, err := parseArtifacts(k, v)
+			artifacts, err := parseArtifacts(v)
 			if err != nil {
 				return nil, err
 			}
@@ -96,7 +102,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 		}
 	}
 	if len(t.Script) == 0 {
-		return nil, fmt.Errorf("invalid task %#v missing script", name)
+		return nil, fmt.Errorf("invalid task %#v: missing script", name)
 	}
 	if t.Stage == "" {
 		t.Stage = DefaultStage
@@ -104,7 +110,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 	return t, nil
 }
 
-func parseArtifacts(name string, v interface{}) (Artifacts, error) {
+func parseArtifacts(v interface{}) (Artifacts, error) {
 	a := Artifacts{Paths: []string{}}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
@@ -113,6 +119,23 @@ func parseArtifacts(name string, v interface{}) (Artifacts, error) {
 		}
 	}
 	return a, nil
+}
+
+func parseRules(v interface{}) ([]Rule, error) {
+	rules := []Rule{}
+	for _, rule := range v.([]interface{}) {
+		currentRule := Rule{}
+		for k, v := range rule.(map[string]interface{}) {
+			switch k {
+			case "if":
+				currentRule.If = v.(string)
+			case "when":
+				currentRule.When = v.(string)
+			}
+		}
+		rules = append(rules, currentRule)
+	}
+	return rules, nil
 }
 
 func findStages(tasks []*Task) []string {
