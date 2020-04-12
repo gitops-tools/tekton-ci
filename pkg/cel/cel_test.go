@@ -1,4 +1,4 @@
-package spec
+package cel
 
 import (
 	"regexp"
@@ -35,7 +35,7 @@ func TestExpressionEvaluation(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(makeHookFromFixture(t, tt.fixture, tt.eventType))
+			ectx, err := makeEvalContext(makeHookFromFixture(rt, tt.fixture, tt.eventType))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -82,7 +82,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(makeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request"))
+			ectx, err := makeEvalContext(makeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -92,6 +92,36 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("evaluate() got %s, wanted %s", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestContextEvaluate(t *testing.T) {
+	hook := makeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	ctx, err := New(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := ctx.Evaluate("hook.Action")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != types.String("opened") {
+		t.Fatalf("got %#v, want %#v\n", result, types.String("opened"))
+	}
+}
+
+func TestContextEvaluateToString(t *testing.T) {
+	hook := makeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	ctx, err := New(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := ctx.EvaluateToString("hook.PullRequest.Number")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != "2" {
+		t.Fatalf("got %#v, want %#v\n", result, "2")
 	}
 }
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/google/cel-go/common/types"
-	"github.com/google/cel-go/common/types/ref"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
@@ -19,17 +19,12 @@ import (
 // Finally a PipelineRun is returned, populated with the spec from the
 // definition.
 func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pipelinev1.PipelineRun, error) {
-	env, err := makeCelEnv()
+	ctx, err := cel.New(hook)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make CEL environment: %w", err)
 	}
-	ectx, err := makeEvalContext(hook)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make CEL context: %w", err)
-	}
-
 	if pd.Filter != "" {
-		match, err := evaluate(pd.Filter, env, ectx)
+		match, err := ctx.Evaluate(pd.Filter)
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate the expression '%s': %w", pd.Filter, err)
 		}
@@ -42,7 +37,7 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 		}
 	}
 	for _, v := range pd.ParamBindings {
-		evaluated, err := evaluate(v.Expression, env, ectx)
+		evaluated, err := ctx.EvaluateToString(v.Expression)
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate the expression '%s': %w", v.Expression, err)
 		}
@@ -51,11 +46,6 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 	return resources.PipelineRun("pipelineRun", generateName, pd.PipelineRunSpec), nil
 }
 
-// TODO: This should probably stringify other ref.Types
-func valToString(v ref.Val) pipelinev1.ArrayOrString {
-	switch val := v.(type) {
-	case types.String:
-		return pipelinev1.ArrayOrString{StringVal: val.Value().(string), Type: "string"}
-	}
-	return pipelinev1.ArrayOrString{StringVal: "unknown", Type: "string"}
+func valToString(v string) pipelinev1.ArrayOrString {
+	return pipelinev1.ArrayOrString{StringVal: v, Type: "string"}
 }
