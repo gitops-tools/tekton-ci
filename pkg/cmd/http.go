@@ -17,7 +17,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/githooks"
-	"github.com/bigkevmcd/tekton-ci/pkg/githooks/pipelinerun"
+	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
@@ -62,7 +62,7 @@ func makeHTTPCmd() *cobra.Command {
 				newDSLConfig(),
 				namespace,
 				sugar)
-			pipelinerunHandler := pipelinerun.New(
+			specHandler := spec.New(
 				git.New(scmClient),
 				tektonClient,
 				namespace,
@@ -74,7 +74,7 @@ func makeHTTPCmd() *cobra.Command {
 			))
 			http.Handle("/pipelinerun", githooks.New(
 				git.New(scmClient),
-				pipelinerunHandler,
+				specHandler,
 				sugar,
 			))
 			listen := fmt.Sprintf(":%d", viper.GetInt("port"))

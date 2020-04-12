@@ -152,13 +152,11 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
- * Namespaces for PipelineRuns.
- * Watch for ending runs and delete the volue mount
+ * Watch for ending runs and delete the volume mount.
  * Support private Git repositories.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
- * Fix parallel running of tasks in the same stage
  * Configuration for archiving - currently spawns an image with a URL, how to
    do configuration for this?
  * Provide support for calling other Tekton tasks from the script DSL.
@@ -168,6 +166,7 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
    tasks.
  * Support more events (Push) and actions other than `opened` for the script DSL format.
  * Filtering of the events (only pushes to "master" for example).
+ * ~~Fix parallel running of tasks in the same stage~~
  * ~~Automate volume claims for the script-based DSL.~~
  * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
  * ~~HTTP hook endpoint to trigger pipelineruns automatically~~

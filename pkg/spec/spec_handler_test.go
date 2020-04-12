@@ -1,9 +1,7 @@
-package pipelinerun
+package spec
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -100,24 +98,6 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when no pipeline definition exists")
 	}
-}
-
-func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
-	t.Helper()
-	b, err := json.Marshal(e)
-	if err != nil {
-		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
-	}
-	return bytes.NewBuffer(b)
-}
-
-// TODO use uuid to generate the Delivery ID.
-func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
-	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-GitHub-Event", eventType)
-	return req
 }
 
 func mustReadBody(t *testing.T, req *http.Response) []byte {

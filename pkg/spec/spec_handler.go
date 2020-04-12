@@ -1,4 +1,4 @@
-package pipelinerun
+package spec
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
-	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 )
 
 const (
@@ -20,17 +19,17 @@ const (
 	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
-// PipelineHandler implements the GitEventHandler interface and processes
+// Handler implements the GitEventHandler interface and processes
 // .tekton_ci.yaml files in a repository.
-type PipelineHandler struct {
+type Handler struct {
 	scmClient      git.SCM
 	log            logger.Logger
 	pipelineClient pipelineclientset.Interface
 	namespace      string
 }
 
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger.Logger) *PipelineHandler {
-	return &PipelineHandler{
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger.Logger) *Handler {
+	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
 		log:            l,
@@ -38,7 +37,7 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespac
 	}
 }
 
-func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pullRequestFilename, evt.PullRequest.Ref)
@@ -52,15 +51,15 @@ func (h *PipelineHandler) PullRequest(ctx context.Context, evt *scm.PullRequestH
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	parsed, err := spec.Parse(bytes.NewReader(content))
+	parsed, err := Parse(bytes.NewReader(content))
 	if err != nil {
 		h.log.Errorf("error parsing pipeline definition: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr, err := spec.Execute(parsed, evt, nameFromPullRequest(evt))
+	pr, err := Execute(parsed, evt, nameFromPullRequest(evt))
 	if err != nil {
-		h.log.Errorf("error executing pipelined definition: %s", err)
+		h.log.Errorf("error executing pipeline definition: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
