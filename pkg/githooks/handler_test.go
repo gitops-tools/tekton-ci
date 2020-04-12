@@ -1,9 +1,7 @@
 package githooks
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,7 +28,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	mock := &mockEventHandler{}
 	h := New(git.New(scmClient), mock, logger.Sugar())
-	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
+	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 
 	h.ServeHTTP(rec, req)
@@ -49,7 +47,7 @@ func TestHandleUnknown(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.DebugLevel))
 	mock := &mockEventHandler{}
 	h := New(git.New(scmClient), mock, logger.Sugar())
-	req := makeHookRequest(t, "testdata/github_pull_request.json", "unknown")
+	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "unknown")
 	rec := httptest.NewRecorder()
 
 	h.ServeHTTP(rec, req)
@@ -57,24 +55,6 @@ func TestHandleUnknown(t *testing.T) {
 	if s := rec.Result().StatusCode; s != http.StatusInternalServerError {
 		t.Fatalf("response status got %d, want %d", s, http.StatusInternalServerError)
 	}
-}
-
-func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
-	t.Helper()
-	b, err := json.Marshal(e)
-	if err != nil {
-		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
-	}
-	return bytes.NewBuffer(b)
-}
-
-// TODO use uuid to generate the Delivery ID.
-func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
-	req.Header.Add("X-GitHub-Delivery", deliveryID)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-GitHub-Event", eventType)
-	return req
 }
 
 type mockEventHandler struct {

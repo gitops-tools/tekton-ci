@@ -1,10 +1,6 @@
 package spec
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"testing"
 
@@ -111,7 +107,7 @@ func matchError(t *testing.T, s string, e error) bool {
 
 func makeHookFromFixture(t *testing.T, filename, eventType string) interface{} {
 	t.Helper()
-	req := makeHookRequest(t, filename, eventType)
+	req := test.MakeHookRequest(t, filename, eventType)
 	scmClient, err := factory.NewClient("github", "", "")
 	if err != nil {
 		t.Fatal(err)
@@ -122,30 +118,4 @@ func makeHookFromFixture(t *testing.T, filename, eventType string) interface{} {
 		t.Fatal(err)
 	}
 	return hook
-}
-
-// TODO use uuid to generate the Delivery ID.
-func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
-	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-GitHub-Event", eventType)
-	return req
-}
-
-func makeClient(t *testing.T, as *httptest.Server) *git.SCMClient {
-	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return git.New(scmClient)
-}
-
-func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
-	t.Helper()
-	b, err := json.Marshal(e)
-	if err != nil {
-		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
-	}
-	return bytes.NewBuffer(b)
 }

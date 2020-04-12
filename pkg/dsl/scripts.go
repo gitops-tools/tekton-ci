@@ -13,7 +13,6 @@ const (
 	beforeStepTaskName   = "before-step"
 	afterStepTaskName    = "after-step"
 	workspaceName        = "git-checkout"
-	persistentClaimName  = "shared-task-storage"
 	workspaceBindingName = "source"
 	workspaceSourcePath  = "$(workspaces.source.path)"
 	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
@@ -52,7 +51,6 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 
 	if len(p.AfterScript) > 0 {
 		tasks = append(tasks, makeScriptTask(previous, afterStepTaskName, env, p.Image, p.AfterScript))
-		previous = beforeStepTaskName
 	}
 
 	spec := pipelinev1.PipelineRunSpec{

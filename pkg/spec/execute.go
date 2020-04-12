@@ -59,10 +59,3 @@ func valToString(v ref.Val) pipelinev1.ArrayOrString {
 	}
 	return pipelinev1.ArrayOrString{StringVal: "unknown", Type: "string"}
 }
-
-func trackerAnnotations() map[string]string {
-	return map[string]string{
-		"tekton.dev/git-status":     "true",
-		"tekton.dev/status-context": "tekton-ci",
-	}
-}

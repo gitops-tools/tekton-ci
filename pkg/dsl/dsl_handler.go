@@ -34,8 +34,8 @@ type Handler struct {
 	config         *Configuration
 }
 
-// New creates and returns a new implementation GitEventHandler capable of
-// converting ci.Pipelines into PipelineRuns.
+// New creates and returns a new Handler for converting ci.Pipelines into
+// PipelineRuns.
 func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, cfg *Configuration, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
@@ -47,7 +47,20 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCr
 	}
 }
 
+func isAction(evt *scm.PullRequestHook, acts ...scm.Action) bool {
+	for _, a := range acts {
+		if evt.Action == a {
+			return true
+		}
+	}
+	return false
+}
+
+// PullRequest implements the GitEventHandler interface.
 func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+	if !isAction(evt, scm.ActionOpen, scm.ActionSync) {
+		return
+	}
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)
@@ -83,8 +96,18 @@ func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w h
 		return
 	}
 	b, err := json.Marshal(created)
+	if err != nil {
+		h.log.Errorf("error marshaling response: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(b)
+	_, err = w.Write(b)
+	if err != nil {
+		h.log.Errorf("error writing response: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	h.log.Infow("completed request")
 }
 

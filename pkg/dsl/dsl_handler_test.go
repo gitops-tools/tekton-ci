@@ -1,9 +1,7 @@
 package dsl
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +26,7 @@ import (
 
 const testNS = "testing"
 
-func TestHandlePullRequestEvent(t *testing.T) {
+func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "testdata/content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
@@ -41,7 +39,7 @@ func TestHandlePullRequestEvent(t *testing.T) {
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
-	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
+	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +111,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
-	req := makeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
+	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
 	hook, err := gitClient.ParseWebhookRequest(req)
 	if err != nil {
 		t.Fatal(err)
@@ -132,22 +130,38 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	}
 }
 
-func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
-	t.Helper()
-	b, err := json.Marshal(e)
+func TestHandlePullRequestClosedEvent(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "testdata/content.json")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
-		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
+		t.Fatal(err)
 	}
-	return bytes.NewBuffer(b)
-}
+	gitClient := git.New(scmClient)
+	fakeTektonClient := fakeclientset.NewSimpleClientset()
+	fakeClient := fake.NewSimpleClientset()
+	vc := volumes.New(fakeClient)
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
+	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request", func(f map[string]interface{}) {
+		f["action"] = "closed"
+	})
+	hook, err := gitClient.ParseWebhookRequest(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
 
-// TODO use uuid to generate the Delivery ID.
-func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
-	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-GitHub-Event", eventType)
-	return req
+	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+
+	w := rec.Result()
+	if w.StatusCode != http.StatusOK {
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
+	}
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	if !errors.IsNotFound(err) {
+		t.Fatalf("pipelinerun was created when no pipeline definition exists")
+	}
 }
 
 func mustReadBody(t *testing.T, req *http.Response) []byte {

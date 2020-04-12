@@ -131,7 +131,7 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 	logIfError(viper.BindPFlag("archive-url", cmd.Flags().Lookup("archive-url")))
 	cmd.Flags().String(
 		"pipelinerun-prefix",
-		"test-pipelinerun-",
+		defaultPipelineRunPrefix,
 		"used for the generateName in the generated PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-prefix", cmd.Flags().Lookup("pipelinerun-prefix")))

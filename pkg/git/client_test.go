@@ -1,9 +1,7 @@
 package git
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -53,13 +51,16 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 func TestParseWebhook(t *testing.T) {
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
 	defer as.Close()
-	req := makeHookRequest(t, "testdata/push_hook.json", "push")
+	req := test.MakeHookRequest(t, "testdata/push_hook.json", "push")
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
 		t.Fatal(err)
 	}
 	client := New(scmClient)
 	hook, err := client.ParseWebhookRequest(req)
+	if err != nil {
+		t.Fatal(err)
+	}
 	_ = hook.(*scm.PushHook)
 }
 
@@ -80,32 +81,9 @@ func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server 
 		if err != nil {
 			t.Fatalf("failed to read %s: %s", fixture, err)
 		}
-		w.Write(b)
+		_, err = w.Write(b)
+		if err != nil {
+			t.Fatalf("failed to write: %s", err)
+		}
 	}))
-}
-
-// TODO use uuid to generate the Delivery ID.
-func makeHookRequest(t *testing.T, fixture, eventType string) *http.Request {
-	req := httptest.NewRequest("POST", "/", serialiseToJSON(t, test.ReadJSONFixture(t, fixture)))
-	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-GitHub-Event", eventType)
-	return req
-}
-
-func makeClient(t *testing.T, as *httptest.Server) *SCMClient {
-	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return New(scmClient)
-}
-
-func serialiseToJSON(t *testing.T, e interface{}) *bytes.Buffer {
-	t.Helper()
-	b, err := json.Marshal(e)
-	if err != nil {
-		t.Fatalf("failed to marshal %#v to JSON: %s", e, err)
-	}
-	return bytes.NewBuffer(b)
 }
