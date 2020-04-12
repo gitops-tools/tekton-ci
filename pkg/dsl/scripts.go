@@ -3,7 +3,6 @@ package dsl
 import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
@@ -56,28 +55,25 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 		previous = beforeStepTaskName
 	}
 
-	return &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: config.PipelineRunPrefix, Annotations: resources.Annotations("dsl")},
-		Spec: pipelinev1.PipelineRunSpec{
-			Workspaces: []pipelinev1.WorkspaceBinding{
-				pipelinev1.WorkspaceBinding{
-					Name: workspaceName,
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: volumeClaimName,
-					},
+	spec := pipelinev1.PipelineRunSpec{
+		Workspaces: []pipelinev1.WorkspaceBinding{
+			pipelinev1.WorkspaceBinding{
+				Name: workspaceName,
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: volumeClaimName,
 				},
-			},
-			PipelineSpec: &pipelinev1.PipelineSpec{
-				Workspaces: []pipelinev1.WorkspacePipelineDeclaration{
-					pipelinev1.WorkspacePipelineDeclaration{
-						Name: workspaceName,
-					},
-				},
-				Tasks: tasks,
 			},
 		},
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{
+				pipelinev1.WorkspacePipelineDeclaration{
+					Name: workspaceName,
+				},
+			},
+			Tasks: tasks,
+		},
 	}
+	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec)
 }
 
 func makeTaskForStage(job, stage, previous string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {

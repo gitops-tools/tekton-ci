@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
@@ -33,18 +32,15 @@ func TestExecute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &pipelinev1.PipelineRun{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "new-pipeline-run-", Annotations: resources.Annotations("pipelineRun")},
-		Spec: pipelinev1.PipelineRunSpec{
-			Params: []pipelinev1.Param{
-				pipelinev1.Param{
-					Name:  "COMMIT_SHA",
-					Value: pipelinev1.ArrayOrString{StringVal: testSHA, Type: "string"},
-				},
+	want := resources.PipelineRun("pipelineRun", "new-pipeline-run-", pipelinev1.PipelineRunSpec{
+		Params: []pipelinev1.Param{
+			pipelinev1.Param{
+				Name:  "COMMIT_SHA",
+				Value: pipelinev1.ArrayOrString{StringVal: testSHA, Type: "string"},
 			},
-			PipelineSpec: testPipelineSpec,
 		},
-	}
+		PipelineSpec: testPipelineSpec,
+	})
 	if diff := cmp.Diff(want, pr, cmpopts.IgnoreFields(pipelinev1.PipelineRun{}, "TypeMeta")); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
 	}

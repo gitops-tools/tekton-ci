@@ -152,6 +152,8 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
+ * Namespaces for PipelineRuns.
+ * Watch for ending runs and delete the volue mount
  * Support private Git repositories.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).

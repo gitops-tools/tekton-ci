@@ -5,7 +5,6 @@ import (
 
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
@@ -146,88 +145,84 @@ func TestConvert(t *testing.T) {
 
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
-	want := &pipelinev1.PipelineRun{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
-		ObjectMeta: metav1.ObjectMeta{Namespace: "", GenerateName: "my-pipeline-run-", Annotations: resources.Annotations("dsl")},
-		Spec: pipelinev1.PipelineRunSpec{
-			Workspaces: []pipelinev1.WorkspaceBinding{
-				pipelinev1.WorkspaceBinding{
-					Name: "git-checkout",
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: "my-volume-claim-123",
-					},
+	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		Workspaces: []pipelinev1.WorkspaceBinding{
+			pipelinev1.WorkspaceBinding{
+				Name: "git-checkout",
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "my-volume-claim-123",
 				},
-			},
-			PipelineSpec: &pipelinev1.PipelineSpec{
-				Tasks: []pipelinev1.PipelineTask{
-					makeGitCloneTask(testEnv, source),
-					makeScriptTask(gitCloneTaskName, beforeStepTaskName, testEnv, p.Image, p.BeforeScript),
-					pipelinev1.PipelineTask{
-						Name: "format-stage-test",
-						TaskSpec: &pipelinev1.TaskSpec{
-							Steps: []pipelinev1.Step{
-								pipelinev1.Step{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh", "-c", "go fmt $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
-								},
-								pipelinev1.Step{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh", "-c", "go vet $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
-								},
-								pipelinev1.Step{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh", "-c", "go test -race $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
-								},
-							},
-							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
-						},
-						RunAfter:   []string{"before-step"},
-						Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-					},
-					pipelinev1.PipelineTask{
-						Name: "compile-stage-build",
-						TaskSpec: &pipelinev1.TaskSpec{
-							Steps: []pipelinev1.Step{
-								pipelinev1.Step{
-									Container: container("", "golang:latest", []string{"sh", "-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
-								},
-							},
-							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
-						},
-						RunAfter:   []string{"format-stage-test"},
-						Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-					},
-					pipelinev1.PipelineTask{
-						Name:       "compile-archiver",
-						RunAfter:   []string{"format-stage-test"},
-						Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-						TaskSpec: &pipelinev1.TaskSpec{
-							Steps: []pipelinev1.Step{
-								pipelinev1.Step{
-									Container: container("compile-archiver-archiver", testArchiverImage, []string{"./archiver", "--url", testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
-								},
-							},
-							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
-						},
-					},
-					makeScriptTask("compile-archiver", afterStepTaskName, testEnv, p.Image, p.AfterScript),
-				},
-				Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 			},
 		},
-	}
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{
+				makeGitCloneTask(testEnv, source),
+				makeScriptTask(gitCloneTaskName, beforeStepTaskName, testEnv, p.Image, p.BeforeScript),
+				pipelinev1.PipelineTask{
+					Name: "format-stage-test",
+					TaskSpec: &pipelinev1.TaskSpec{
+						Steps: []pipelinev1.Step{
+							pipelinev1.Step{
+								Container: corev1.Container{
+									Image:      "golang:latest",
+									Command:    []string{"sh", "-c", "go fmt $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
+								},
+							},
+							pipelinev1.Step{
+								Container: corev1.Container{
+									Image:      "golang:latest",
+									Command:    []string{"sh", "-c", "go vet $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
+								},
+							},
+							pipelinev1.Step{
+								Container: corev1.Container{
+									Image:      "golang:latest",
+									Command:    []string{"sh", "-c", "go test -race $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
+								},
+							},
+						},
+						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
+					},
+					RunAfter:   []string{"before-step"},
+					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+				},
+				pipelinev1.PipelineTask{
+					Name: "compile-stage-build",
+					TaskSpec: &pipelinev1.TaskSpec{
+						Steps: []pipelinev1.Step{
+							pipelinev1.Step{
+								Container: container("", "golang:latest", []string{"sh", "-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
+							},
+						},
+						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
+					},
+					RunAfter:   []string{"format-stage-test"},
+					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+				},
+				pipelinev1.PipelineTask{
+					Name:       "compile-archiver",
+					RunAfter:   []string{"format-stage-test"},
+					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+					TaskSpec: &pipelinev1.TaskSpec{
+						Steps: []pipelinev1.Step{
+							pipelinev1.Step{
+								Container: container("compile-archiver-archiver", testArchiverImage, []string{"./archiver", "--url", testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
+							},
+						},
+						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
+					},
+				},
+				makeScriptTask("compile-archiver", afterStepTaskName, testEnv, p.Image, p.AfterScript),
+			},
+			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
+		},
+	})
 
 	if diff := cmp.Diff(want, pr); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
