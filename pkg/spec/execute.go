@@ -28,10 +28,6 @@ func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pi
 		if err != nil {
 			return nil, fmt.Errorf("failed to evaluate the expression '%s': %w", pd.Filter, err)
 		}
-
-		// TODO: should this return a specific type, so that the HTTP endpoint
-		// can decide whether or not this is actually an error, or merely a
-		// signal that it should not continue?
 		if match != types.True {
 			return nil, fmt.Errorf("expression %s did not return true", pd.Filter)
 		}

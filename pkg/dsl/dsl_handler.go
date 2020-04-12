@@ -75,8 +75,12 @@ func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w h
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr := Convert(parsed, h.config, sourceFromPullRequest(evt), vc.ObjectMeta.Name, nil)
-
+	pr, err := Convert(parsed, h.config, sourceFromPullRequest(evt), vc.ObjectMeta.Name, nil)
+	if err != nil {
+		h.log.Errorf("error converting pipeline to pipelinerun: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)

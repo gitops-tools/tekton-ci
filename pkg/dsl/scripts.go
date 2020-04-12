@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"github.com/google/cel-go/common/types"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -27,7 +28,7 @@ type Source struct {
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
-func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context) *pipelinev1.PipelineRun {
+func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context) (*pipelinev1.PipelineRun, error) {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
@@ -41,7 +42,10 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 		stageTasks := []string{}
 		for _, taskName := range p.TasksForStage(name) {
 			task := p.Task(taskName)
-			stageTask := makeTaskForStage(task.Name, name, previous, env, p.Image, task.Script, ctx)
+			stageTask, err := makeTaskForStage(task, name, previous, env, p.Image, ctx)
+			if err != nil {
+				return nil, err
+			}
 			if stageTask != nil {
 				tasks = append(tasks, *stageTask)
 				if len(task.Artifacts.Paths) > 0 {
@@ -49,8 +53,8 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 					tasks = append(tasks, archiverTask)
 					stageTask = &archiverTask
 				}
+				stageTasks = append(stageTasks, stageTask.Name)
 			}
-			stageTasks = append(stageTasks, stageTask.Name)
 		}
 		previous = stageTasks
 	}
@@ -75,16 +79,29 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 			Tasks: tasks,
 		},
 	}
-	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec)
+	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec), nil
 }
 
-func makeTaskForStage(job, stage string, runAfter []string, env []corev1.EnvVar, image string, script []string, ctx *cel.Context) *pipelinev1.PipelineTask {
+func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev1.EnvVar, image string, ctx *cel.Context) (*pipelinev1.PipelineTask, error) {
+	ruleResults := make([]string, len(job.Rules))
+	for i, r := range job.Rules {
+		res, err := ctx.Evaluate(r.If)
+		if err != nil {
+			return nil, err
+		}
+		if res == types.True {
+			ruleResults[i] = r.When
+		}
+	}
+	if hasNever(ruleResults) {
+		return nil, nil
+	}
 	return &pipelinev1.PipelineTask{
-		Name:       job + "-stage-" + stage,
+		Name:       job.Name + "-stage-" + stage,
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   runAfter,
-		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, script)...),
-	}
+		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, job.Script)...),
+	}, nil
 }
 
 func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask {
@@ -175,4 +192,13 @@ func container(name, image string, command []string, env []corev1.EnvVar, workDi
 		Env:        env,
 		WorkingDir: workDir,
 	}
+}
+
+func hasNever(whens []string) bool {
+	for _, v := range whens {
+		if v == "never" {
+			return true
+		}
+	}
+	return false
 }

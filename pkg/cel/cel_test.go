@@ -6,9 +6,7 @@ import (
 
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
-	"github.com/jenkins-x/go-scm/scm/factory"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
 
@@ -35,7 +33,7 @@ func TestExpressionEvaluation(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(makeHookFromFixture(rt, tt.fixture, tt.eventType))
+			ectx, err := makeEvalContext(test.MakeHookFromFixture(rt, tt.fixture, tt.eventType))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -82,7 +80,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(makeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
+			ectx, err := makeEvalContext(test.MakeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -96,7 +94,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 }
 
 func TestContextEvaluate(t *testing.T) {
-	hook := makeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -111,7 +109,7 @@ func TestContextEvaluate(t *testing.T) {
 }
 
 func TestContextEvaluateToString(t *testing.T) {
-	hook := makeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -133,19 +131,4 @@ func matchError(t *testing.T, s string, e error) bool {
 		t.Fatal(err)
 	}
 	return match
-}
-
-func makeHookFromFixture(t *testing.T, filename, eventType string) interface{} {
-	t.Helper()
-	req := test.MakeHookRequest(t, filename, eventType)
-	scmClient, err := factory.NewClient("github", "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	client := git.New(scmClient)
-	hook, err := client.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return hook
 }

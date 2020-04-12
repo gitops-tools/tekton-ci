@@ -6,8 +6,10 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
+	"github.com/bigkevmcd/tekton-ci/test"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -140,7 +142,10 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr := Convert(p, testConfiguration(), source, "my-volume-claim-123", nil)
+	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
@@ -188,7 +193,7 @@ func TestConvert(t *testing.T) {
 						},
 						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
 					},
-					RunAfter:   []string{"before-step"},
+					RunAfter:   []string{beforeStepTaskName},
 					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
 				},
 				pipelinev1.PipelineTask{
@@ -218,6 +223,64 @@ func TestConvert(t *testing.T) {
 					},
 				},
 				makeScriptTask(afterStepTaskName, []string{"compile-archiver"}, testEnv, p.Image, p.AfterScript),
+			},
+			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
+		},
+	})
+
+	if diff := cmp.Diff(want, pr); diff != "" {
+		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
+	}
+}
+
+func TestConvertWithRules(t *testing.T) {
+	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
+	p := &ci.Pipeline{
+		Image:     "golang:latest",
+		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
+		Stages: []string{
+			"test",
+		},
+		Tasks: []*ci.Task{
+			&ci.Task{
+				Name:  "format",
+				Stage: "test",
+				Script: []string{
+					"go test -race $(go list ./... | grep -v /vendor/)",
+				},
+				Rules: []ci.Rule{
+					ci.Rule{
+						If:   `hook.PullRequest.Head.Ref != "master"`,
+						When: "never",
+					},
+				},
+			},
+		},
+	}
+	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	ctx, err := cel.New(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testEnv := makeEnv(p.Variables)
+	// TODO flatten this test
+	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		Workspaces: []pipelinev1.WorkspaceBinding{
+			pipelinev1.WorkspaceBinding{
+				Name: "git-checkout",
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "my-volume-claim-123",
+				},
+			},
+		},
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{
+				makeGitCloneTask(testEnv, source),
 			},
 			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 		},
