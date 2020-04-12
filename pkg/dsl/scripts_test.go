@@ -140,7 +140,7 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr := Convert(p, testConfiguration(), source, "my-volume-claim-123")
+	pr := Convert(p, testConfiguration(), source, "my-volume-claim-123", nil)
 
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
@@ -240,12 +240,23 @@ func TestContainer(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("Container doesn't match:\n%s", diff)
+		t.Fatalf("container doesn't match:\n%s", diff)
 	}
 }
 
 func TestMakeEnv(t *testing.T) {
-	t.Skip()
+	env := makeEnv(map[string]string{
+		"TEST_KEY": "test_val",
+	})
+
+	want := []corev1.EnvVar{
+		{Name: "TEST_KEY", Value: "test_val"},
+		{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
+	}
+	if diff := cmp.Diff(want, env); diff != "" {
+		t.Fatalf("env doesn't match:\n%s", diff)
+	}
+
 }
 
 func TestMakeScriptSteps(t *testing.T) {

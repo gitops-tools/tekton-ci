@@ -79,7 +79,7 @@ func TestTaskOrdering(t *testing.T) {
 		t.Run(tt.name, func(rt *testing.T) {
 			p := makeOrderingPipeline(tt.before, tt.after, tt.stages, tt.tasks)
 			src := &Source{RepoURL: testRepoURL, Ref: "master"}
-			pr := Convert(p, testConfiguration(), src, "test-volume")
+			pr := Convert(p, testConfiguration(), src, "test-volume", nil)
 
 			if diff := cmp.Diff(tt.want, tasksFromPipelineRun(pr)); diff != "" {
 				rt.Errorf("%s failed diff: %s\n", tt.name, diff)
