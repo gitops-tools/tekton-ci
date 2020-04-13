@@ -141,8 +141,16 @@ func TestEvalContextVars(t *testing.T) {
 		eventType string
 		want      map[string]string
 	}{
-		{"testdata/github_pull_request.json", "pull_request", map[string]string{}},
-		{"testdata/github_push.json", "push", map[string]string{}},
+		{"testdata/github_pull_request.json", "pull_request", map[string]string{
+			"CI_COMMIT_SHA":       "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
+			"CI_COMMIT_SHORT_SHA": "ec26c3e",
+			"CI_COMMIT_BRANCH":    "changes",
+		}},
+		{"testdata/github_push.json", "push", map[string]string{
+			"CI_COMMIT_SHA":       "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
+			"CI_COMMIT_SHORT_SHA": "6113728",
+			"CI_COMMIT_BRANCH":    "simple-tag",
+		}},
 	}
 
 	for _, tt := range tests {

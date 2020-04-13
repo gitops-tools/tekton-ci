@@ -3,6 +3,7 @@ package cel
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
@@ -79,7 +80,7 @@ func makeEvalContext(hook scm.Webhook) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	vars := map[string]string{}
+	vars := varsFromHook(hook)
 	return map[string]interface{}{"hook": m, "vars": vars}, nil
 }
 
@@ -105,5 +106,24 @@ func valToString(v ref.Val) (string, error) {
 }
 
 func varsFromHook(h scm.Webhook) map[string]string {
+	switch v := h.(type) {
+	case *scm.PullRequestHook:
+		return map[string]string{
+			"CI_COMMIT_SHA":       v.PullRequest.Sha,
+			"CI_COMMIT_SHORT_SHA": v.PullRequest.Sha[0:7],
+			"CI_COMMIT_BRANCH":    v.PullRequest.Source,
+		}
+	case *scm.PushHook:
+		return map[string]string{
+			"CI_COMMIT_SHA":       v.Before,
+			"CI_COMMIT_SHORT_SHA": v.Before[0:7],
+			"CI_COMMIT_BRANCH":    branchFromRef(v.Ref),
+		}
+	}
 	return nil
+}
+
+func branchFromRef(s string) string {
+	parts := strings.Split(s, "/")
+	return parts[len(parts)-1]
 }
