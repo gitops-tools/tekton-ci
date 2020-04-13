@@ -39,11 +39,14 @@ func makeRootCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 			source := &dsl.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
-			converted := dsl.Convert(parsed, newDSLConfig(), source, "shared-task-storage")
+			converted, err := dsl.Convert(parsed, newDSLConfig(), source, "shared-task-storage", nil)
+			if err != nil {
+				log.Fatalf("error converting the script: %v", err)
+			}
 
 			d, err := yaml.Marshal(converted)
 			if err != nil {
-				log.Fatalf("error: %v", err)
+				log.Fatalf("error marshaling YAML: %v", err)
 			}
 			fmt.Printf("%s\n", string(d))
 		},

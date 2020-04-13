@@ -6,8 +6,9 @@ import (
 
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
+	"github.com/google/go-cmp/cmp"
 
-	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/bigkevmcd/tekton-ci/test/hook"
 )
 
 func TestExpressionEvaluation(t *testing.T) {
@@ -33,7 +34,7 @@ func TestExpressionEvaluation(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(test.MakeHookFromFixture(rt, tt.fixture, tt.eventType))
+			ectx, err := makeEvalContext(hook.MakeHookFromFixture(rt, tt.fixture, tt.eventType))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -80,7 +81,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(test.MakeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
+			ectx, err := makeEvalContext(hook.MakeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -94,7 +95,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 }
 
 func TestContextEvaluate(t *testing.T) {
-	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +110,7 @@ func TestContextEvaluate(t *testing.T) {
 }
 
 func TestContextEvaluateToString(t *testing.T) {
-	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -120,6 +121,41 @@ func TestContextEvaluateToString(t *testing.T) {
 	}
 	if result != "2" {
 		t.Fatalf("got %#v, want %#v\n", result, "2")
+	}
+}
+
+func TestMakeEvalContext(t *testing.T) {
+	hook := hook.MakeHookFromFixture(t, "testdata/github_push.json", "push")
+	ctx, err := makeEvalContext(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := ctx["hook"].(map[string]interface{})["Ref"]; v != "refs/tags/simple-tag" {
+		t.Fatalf("hook.ref got %s, want %s", v, "refs/tags/simple-tag")
+	}
+}
+
+func TestEvalContextVars(t *testing.T) {
+	tests := []struct {
+		fixture   string
+		eventType string
+		want      map[string]string
+	}{
+		{"testdata/github_pull_request.json", "pull_request", map[string]string{}},
+		{"testdata/github_push.json", "push", map[string]string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.fixture, func(rt *testing.T) {
+			hook := hook.MakeHookFromFixture(t, tt.fixture, tt.eventType)
+			ctx, err := makeEvalContext(hook)
+			if err != nil {
+				rt.Fatal(err)
+			}
+			if diff := cmp.Diff(tt.want, ctx["vars"].(map[string]string)); diff != "" {
+				rt.Fatalf("vars didn't match: %s\n", diff)
+			}
+		})
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/cel-go/common/types"
+	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
@@ -18,7 +19,7 @@ import (
 //
 // Finally a PipelineRun is returned, populated with the spec from the
 // definition.
-func Execute(pd *PipelineDefinition, hook interface{}, generateName string) (*pipelinev1.PipelineRun, error) {
+func Execute(pd *PipelineDefinition, hook scm.Webhook, generateName string) (*pipelinev1.PipelineRun, error) {
 	ctx, err := cel.New(hook)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make CEL environment: %w", err)

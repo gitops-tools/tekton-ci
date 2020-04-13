@@ -9,7 +9,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
-	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/bigkevmcd/tekton-ci/test/hook"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -257,7 +257,7 @@ func TestConvertWithRules(t *testing.T) {
 			},
 		},
 	}
-	hook := test.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
 	ctx, err := cel.New(hook)
 	if err != nil {
 		t.Fatal(err)

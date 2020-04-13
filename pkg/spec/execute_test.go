@@ -19,7 +19,7 @@ const (
 
 func TestExecute(t *testing.T) {
 	d := readDefinition(t, "testdata/example.yaml")
-	hook := scm.PullRequestHook{
+	hook := &scm.PullRequestHook{
 		Action: scm.ActionOpen,
 		Repo:   scm.Repository{},
 		PullRequest: scm.PullRequest{
