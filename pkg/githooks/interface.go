@@ -11,4 +11,5 @@ import (
 // webhooks that have been parsed by the go-scm package.
 type GitEventHandler interface {
 	PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter)
+	Push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter)
 }

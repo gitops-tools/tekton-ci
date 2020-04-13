@@ -38,6 +38,8 @@ func (h *HookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch evt := hook.(type) {
 	case *scm.PullRequestHook:
 		h.eventHandler.PullRequest(r.Context(), evt, w)
+	case *scm.PushHook:
+		h.eventHandler.Push(r.Context(), evt, w)
 	}
 }
 
