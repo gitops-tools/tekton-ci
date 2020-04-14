@@ -9,6 +9,9 @@ stages:
 
 format:
   stage: test
+  rules:
+    - if: vars.CI_BRANCH_NAME != 'master'
+      when: never
   script:
     - go mod download
     - go fmt ./...

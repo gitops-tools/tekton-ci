@@ -113,6 +113,7 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 		"image to execute for archiving artifacts",
 	)
 	logIfError(viper.BindPFlag("archiver-image", cmd.Flags().Lookup("archiver-image")))
+	logIfError(cmd.MarkFlagRequired("archiver-image"))
 
 	cmd.Flags().String(
 		"archive-url",
@@ -120,6 +121,7 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 		"passed to the archiver for configuration",
 	)
 	logIfError(viper.BindPFlag("archive-url", cmd.Flags().Lookup("archive-url")))
+	logIfError(cmd.MarkFlagRequired("archive-url"))
 	cmd.Flags().String(
 		"pipelinerun-prefix",
 		defaultPipelineRunPrefix,
