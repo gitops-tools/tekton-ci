@@ -257,7 +257,7 @@ func TestConvertWithRules(t *testing.T) {
 			},
 		},
 	}
-	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
 	ctx, err := cel.New(hook)
 	if err != nil {
 		t.Fatal(err)

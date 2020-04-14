@@ -1,14 +1,12 @@
 package spec
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
@@ -34,14 +32,10 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
-	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
-	hook, err := gitClient.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := test.MakeHookRequest(t, "../testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 
-	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.ServeHTTP(rec, req)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {
@@ -81,14 +75,10 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
-	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
-	hook, err := gitClient.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := test.MakeHookRequest(t, "../testdata/github_pull_request.json", "pull_request")
 	rec := httptest.NewRecorder()
 
-	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.ServeHTTP(rec, req)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {
@@ -101,7 +91,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 }
 
 func TestHandlePushEvent(t *testing.T) {
-	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton/pull_request.yaml", "refs/tags/simple-tag", "testdata/push_content.json")
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton/push.yaml", "refs/tags/simple-tag", "testdata/push_content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
@@ -111,14 +101,10 @@ func TestHandlePushEvent(t *testing.T) {
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
-	req := test.MakeHookRequest(t, "testdata/github_push.json", "push")
-	hook, err := gitClient.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
-	h.Push(context.TODO(), hook.(*scm.PushHook), rec)
+	h.ServeHTTP(rec, req)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {

@@ -47,11 +47,24 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCr
 	}
 }
 
-// PullRequest implements the GitEventHandler interface.
-func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	hook, err := h.scmClient.ParseWebhookRequest(r)
+	if err != nil {
+		h.log.Errorf("error parsing webhook: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	switch evt := hook.(type) {
+	case *scm.PushHook:
+		h.push(r.Context(), evt, w)
+	}
+}
+
+func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
-	h.log.Infow("processing request", "repo", repo)
-	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.PullRequest.Ref)
+	h.log.Infow("processing push event", "repo", repo)
+	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Before)
 	if git.IsNotFound(err) {
 		h.log.Infof("no pipeline definition found in %s", repo)
 		return
@@ -75,7 +88,7 @@ func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w h
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr, err := Convert(parsed, h.config, sourceFromPullRequest(evt), vc.ObjectMeta.Name, nil)
+	pr, err := Convert(parsed, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, nil)
 	if err != nil {
 		h.log.Errorf("error converting pipeline to pipelinerun: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,9 +116,9 @@ func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w h
 	h.log.Infow("completed request")
 }
 
-func sourceFromPullRequest(pr *scm.PullRequestHook) *Source {
+func sourceFromPushEvent(p *scm.PushHook) *Source {
 	return &Source{
-		RepoURL: pr.Repo.Clone,
-		Ref:     pr.PullRequest.Sha,
+		RepoURL: p.Repo.Clone,
+		Ref:     p.Before,
 	}
 }

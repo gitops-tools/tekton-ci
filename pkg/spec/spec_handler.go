@@ -16,6 +16,7 @@ import (
 
 const (
 	pullRequestFilename      = ".tekton/pull_request.yaml"
+	pushFilename             = ".tekton/push.yaml"
 	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
@@ -37,7 +38,24 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespac
 	}
 }
 
-func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	hook, err := h.scmClient.ParseWebhookRequest(r)
+	if err != nil {
+		h.log.Errorf("error parsing webhook: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	switch evt := hook.(type) {
+	case *scm.PullRequestHook:
+		h.pullRequest(r.Context(), evt, w)
+	case *scm.PushHook:
+		h.push(r.Context(), evt, w)
+	}
+}
+
+// TODO: refactor to remove the duplication.
+func (h *Handler) pullRequest(ctx context.Context, evt *scm.PullRequestHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pullRequestFilename, evt.PullRequest.Ref)
@@ -85,10 +103,10 @@ func (h *Handler) PullRequest(ctx context.Context, evt *scm.PullRequestHook, w h
 	h.log.Infow("completed request")
 }
 
-func (h *Handler) Push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
+func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing request", "repo", repo)
-	content, err := h.scmClient.FileContents(ctx, repo, pullRequestFilename, evt.Ref)
+	content, err := h.scmClient.FileContents(ctx, repo, pushFilename, evt.Ref)
 	if git.IsNotFound(err) {
 		h.log.Infof("no pipeline definition found in %s", repo)
 		return

@@ -144,7 +144,7 @@ func findStages(tasks []*Task) []string {
 		foundStages[t.Stage] = true
 	}
 	stages := []string{}
-	for k, _ := range foundStages {
+	for k := range foundStages {
 		stages = append(stages, k)
 	}
 	if len(stages) > 0 {

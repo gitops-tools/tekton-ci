@@ -1,7 +1,6 @@
 package dsl
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
@@ -26,8 +24,8 @@ import (
 
 const testNS = "testing"
 
-func TestHandlePullRequestOpenedEvent(t *testing.T) {
-	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "testdata/content.json")
+func TestHandlePushEvent(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "6113728f27ae82c7b1a177c8d03f9e96e0adf246", "testdata/content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
@@ -39,14 +37,10 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
-	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
-	hook, err := gitClient.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
-	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.ServeHTTP(rec, req)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {
@@ -90,7 +84,7 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	want := []string{
 		"/ko-app/git-init",
 		"-url", "https://github.com/Codertocat/Hello-World.git",
-		"-revision", "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
+		"-revision", "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
 		"-path", "$(workspaces.source.path)",
 	}
 	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Container.Command); diff != "" {
@@ -98,8 +92,8 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	}
 }
 
-func TestHandlePullRequestEventNoPipeline(t *testing.T) {
-	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "refs/pull/2/head", "")
+func TestHandlePushEventNoPipeline(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "6113728f27ae82c7b1a177c8d03f9e96e0adf246", "")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
@@ -111,14 +105,10 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
-	req := test.MakeHookRequest(t, "testdata/github_pull_request.json", "pull_request")
-	hook, err := gitClient.ParseWebhookRequest(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
-	h.PullRequest(context.TODO(), hook.(*scm.PullRequestHook), rec)
+	h.ServeHTTP(rec, req)
 
 	w := rec.Result()
 	if w.StatusCode != http.StatusOK {

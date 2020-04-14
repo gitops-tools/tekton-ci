@@ -112,17 +112,17 @@ This supports standard [PipelineRuns](https://github.com/tektoncd/pipeline/blob/
 
 The example below, if placed in `.tekton/pull_request.yaml` will trigger a simple script that echoes the SHA of the commit when a pull-request is opened.
 
-The expressions in the `filter` and `paramBindings` use [CEL syntax](https://github.com/google/cel-go), and the `hook` comes from the incoming hook, in the example below, this is a [PullRequestHook](https://github.com/jenkins-x/go-scm/blob/master/scm/webhook.go#L251).
+The expressions in the `filter` and `paramBindings` use [CEL syntax](https://github.com/google/cel-go), and the `hook` comes from the incoming hook, in the example below, this is a [PushHook](https://github.com/jenkins-x/go-scm/blob/master/scm/webhook.go#L77).
 
 The PipelineRunSpec is a standard PipelineRun [spec](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md#syntax).
 
 The PipelineRun is created with an automatically generated name, and the `paramBindings` will be _added_ to the pipeline run parameters, this makes it easy to use standard pipelines, but with a mixture of hard-coded and dynamic parameters.
 
 ```yaml
-filter: hook.Action == 'opened'
+filter: hook.Ref == 'refs/heads/master'
 paramBindings:
   - name: COMMIT_SHA
-    expression: hook.PullRequest.Sha
+    expression: hook.Before
 pipelineRunSpec:
   pipelineSpec:
     params:
@@ -152,7 +152,6 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
 ## Things to do
 
- * Support more events (Push) and actions other than `opened` for the script DSL format.
  * Support private Git repositories.
  * Watch for ending runs and delete the volume mount.
  * Provide support for calling other Tekton tasks from the script DSL.
@@ -166,7 +165,8 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
- * Filtering of the events (only pushes to "master" for example).
+ * ~~Filtering of the events (only pushes to "master" for example).~~
+ * ~~Support more events (Push) and actions other than `opened` for the script DSL format.~~
  * ~~Fix parallel running of tasks in the same stage~~
  * ~~Automate volume claims for the script-based DSL.~~
  * ~~Add support for the [commit-status-tracker](https://github.com/tektoncd/experimental/tree/master/commit-status-tracker)~~
