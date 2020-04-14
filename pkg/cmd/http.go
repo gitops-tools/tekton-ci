@@ -102,7 +102,7 @@ func newDSLConfig() *dsl.Configuration {
 	return &dsl.Configuration{
 		ArchiverImage:     viper.GetString("archiver-image"),
 		ArchiveURL:        viper.GetString("archive-url"),
-		PipelineRunPrefix: viper.GetString("pipeline-run-prefix"),
+		PipelineRunPrefix: viper.GetString("pipelinerun-prefix"),
 	}
 }
 
