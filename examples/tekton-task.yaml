@@ -4,8 +4,8 @@ metadata:
   name: tekton-task
 spec:
   workspaces:
-    name: source
-    description: the git source to execute on
+    - name: source
+      description: the git source to execute on
   steps:
     - name: test-go-code
       image: golang:latest

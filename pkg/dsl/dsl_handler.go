@@ -11,6 +11,7 @@ import (
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
@@ -65,6 +66,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing push event", "repo", repo)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Before)
+	// This does not return an error if the pipeline definition can't be found.
 	if git.IsNotFound(err) {
 		h.log.Infof("no pipeline definition found in %s", repo)
 		return
@@ -74,6 +76,12 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		// TODO: should this return a 404?
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	celCtx, err := cel.New(evt)
+	if err != nil {
+		h.log.Errorf("error fetching pipeline file: %s", err)
+		// TODO: should this return a 404?
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	parsed, err := ci.Parse(bytes.NewReader(content))
 	if err != nil {
@@ -88,7 +96,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr, err := Convert(parsed, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, nil)
+	pr, err := Convert(parsed, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, celCtx)
 	if err != nil {
 		h.log.Errorf("error converting pipeline to pipelinerun: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
