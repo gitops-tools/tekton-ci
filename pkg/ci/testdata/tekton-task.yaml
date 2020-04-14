@@ -1,0 +1,5 @@
+image: golang:latest
+
+format:
+  tekton:
+    taskRef: my-test-task

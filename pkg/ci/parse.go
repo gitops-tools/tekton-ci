@@ -87,22 +87,19 @@ func parseTask(name string, v interface{}) (*Task, error) {
 			t.Stage = v.(string)
 		case "script":
 			t.Script = stringSlice(v)
+		case "tekton":
+			t.Tekton = parseTekton(v)
 		case "rules":
-			rules, err := parseRules(v)
-			if err != nil {
-				return nil, err
-			}
-			t.Rules = rules
+			t.Rules = parseRules(v)
 		case "artifacts":
-			artifacts, err := parseArtifacts(v)
-			if err != nil {
-				return nil, err
-			}
-			t.Artifacts = artifacts
+			t.Artifacts = parseArtifacts(v)
 		}
 	}
-	if len(t.Script) == 0 {
+	if len(t.Script) == 0 && t.Tekton == nil {
 		return nil, fmt.Errorf("invalid task %#v: missing script", name)
+	}
+	if len(t.Script) > 0 && t.Tekton != nil {
+		return nil, fmt.Errorf("invalid task %#v: provided Tekton task and Script", name)
 	}
 	if t.Stage == "" {
 		t.Stage = DefaultStage
@@ -110,7 +107,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 	return t, nil
 }
 
-func parseArtifacts(v interface{}) (Artifacts, error) {
+func parseArtifacts(v interface{}) Artifacts {
 	a := Artifacts{Paths: []string{}}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
@@ -118,10 +115,21 @@ func parseArtifacts(v interface{}) (Artifacts, error) {
 			a.Paths = stringSlice(v)
 		}
 	}
-	return a, nil
+	return a
 }
 
-func parseRules(v interface{}) ([]Rule, error) {
+func parseTekton(v interface{}) *TektonTask {
+	t := &TektonTask{}
+	for k, v := range v.(map[string]interface{}) {
+		switch k {
+		case "taskRef":
+			t.TaskRef = v.(string)
+		}
+	}
+	return t
+}
+
+func parseRules(v interface{}) []Rule {
 	rules := []Rule{}
 	for _, rule := range v.([]interface{}) {
 		currentRule := Rule{}
@@ -135,7 +143,7 @@ func parseRules(v interface{}) ([]Rule, error) {
 		}
 		rules = append(rules, currentRule)
 	}
-	return rules, nil
+	return rules
 }
 
 func findStages(tasks []*Task) []string {

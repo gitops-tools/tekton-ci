@@ -14,18 +14,27 @@ type Pipeline struct {
 type Task struct {
 	Name      string
 	Stage     string
+	Tekton    *TektonTask
 	Script    []string
 	Artifacts Artifacts
 	Rules     []Rule
 }
 
+// Artifacts represents a set of paths that should be treated as artifacts and
+// archived in some way.
 type Artifacts struct {
 	Paths []string
 }
 
+// Rule represents a rule that determines when a PipelineRun is triggered.
 type Rule struct {
 	If   string
 	When string
+}
+
+// TektonTask is an extension for executing Tekton Tasks.
+type TektonTask struct {
+	TaskRef string
 }
 
 // TasksForStage returns the named jobs for a specific stage.

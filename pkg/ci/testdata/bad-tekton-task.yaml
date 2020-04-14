@@ -1,0 +1,7 @@
+image: golang:latest
+
+format:
+  script:
+    - echo "testing"
+  tekton:
+    taskRef: my-test-task

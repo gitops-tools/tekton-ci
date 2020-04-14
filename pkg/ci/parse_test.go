@@ -56,6 +56,18 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/tekton-task.yaml", &Pipeline{
+			Image:  "golang:latest",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				&Task{Name: "format",
+					Stage: DefaultStage,
+					Tekton: &TektonTask{
+						TaskRef: "my-test-task",
+					},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {
@@ -69,6 +81,7 @@ func TestParse(t *testing.T) {
 			got, err := Parse(f)
 			if err != nil {
 				rt.Errorf("failed to parse %v: %s", tt.filename, err)
+				return
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				rt.Errorf("Parse(%s) failed diff\n%s", tt.filename, diff)
@@ -83,6 +96,7 @@ func TestParseBadFiles(t *testing.T) {
 		errMsg   string
 	}{
 		{"testdata/bad-task-no-script.yaml", `invalid task "format": missing script`},
+		{"testdata/bad-tekton-task.yaml", `invalid task "format": provided Tekton task and Script`},
 	}
 
 	for _, tt := range parseTests {

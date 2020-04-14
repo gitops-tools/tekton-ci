@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: tekton-task
+spec:
+  workspaces:
+    name: source
+    description: the git source to execute on
+  steps:
+    - name: ubuntu-example
+      image: golang:latest
+      command: ["go", "test", "-v", "./..."]
+      volumeMounts:
+        - name: source
