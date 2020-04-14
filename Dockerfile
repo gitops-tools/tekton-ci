@@ -7,4 +7,4 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /root/
 COPY --from=build /go/src/ci-hook-server .
 EXPOSE 8080
-CMD ["./ci-hook-server", "http"]
+CMD ["./ci-hook-server"]
