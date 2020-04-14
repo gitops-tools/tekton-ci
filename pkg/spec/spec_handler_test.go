@@ -100,6 +100,53 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	}
 }
 
+func TestHandlePushEvent(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton/pull_request.yaml", "refs/tags/simple-tag", "testdata/push_content.json")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitClient := git.New(scmClient)
+	fakeKube := fakeclientset.NewSimpleClientset()
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := New(gitClient, fakeKube, testNS, logger.Sugar())
+	req := test.MakeHookRequest(t, "testdata/github_push.json", "push")
+	hook, err := gitClient.ParseWebhookRequest(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+
+	h.Push(context.TODO(), hook.(*scm.PushHook), rec)
+
+	w := rec.Result()
+	if w.StatusCode != http.StatusOK {
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
+	}
+	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if l := len(pr.Spec.PipelineSpec.Tasks); l != 1 {
+		t.Fatalf("got %d tasks, want 1", l)
+	}
+	// check that it evaluated the parameters in the example.
+	want := []pipelinev1.Param{
+		pipelinev1.Param{
+			Name: "COMMIT_SHA",
+			Value: pipelinev1.ArrayOrString{
+				Type:      "string",
+				StringVal: "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
+			},
+		},
+	}
+	if diff := cmp.Diff(want, pr.Spec.Params); diff != "" {
+		t.Fatalf("pipelinerun parameters incorrect, diff\n%s", diff)
+	}
+}
+
 func mustReadBody(t *testing.T, req *http.Response) []byte {
 	t.Helper()
 	b, err := ioutil.ReadAll(req.Body)

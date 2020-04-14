@@ -12,7 +12,7 @@ import (
 
 func MakeHookFromFixture(t *testing.T, filename, eventType string) scm.Webhook {
 	t.Helper()
-	req := MakeHookRequest(t, filename, eventType)
+	req := test.MakeHookRequest(t, filename, eventType)
 	scmClient, err := factory.NewClient("github", "", "")
 	if err != nil {
 		t.Fatal(err)
