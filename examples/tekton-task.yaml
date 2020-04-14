@@ -9,6 +9,5 @@ spec:
   steps:
     - name: test-go-code
       image: golang:latest
+      workingDir: $(workspaces.source.path)
       command: ["go", "test", "-v", "./..."]
-      volumeMounts:
-        - name: source

@@ -62,10 +62,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO: detect deleted events and don't execute.
 func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
-	h.log.Infow("processing push event", "repo", repo)
-	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Before)
+	h.log.Infow("processing push event", "repo", repo, "sha", evt.Commit.Sha)
+	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Commit.Sha)
 	// This does not return an error if the pipeline definition can't be found.
 	if git.IsNotFound(err) {
 		h.log.Infof("no pipeline definition found in %s", repo)
@@ -98,7 +99,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 	}
 	pr, err := Convert(parsed, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, celCtx)
 	if err != nil {
-		h.log.Errorf("error converting pipeline to pipelinerun: %s", err)
+		h.log.Errorf("error converting pipeline to pipelinerun: %s %#v", err, celCtx.Data)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -127,6 +128,6 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 func sourceFromPushEvent(p *scm.PushHook) *Source {
 	return &Source{
 		RepoURL: p.Repo.Clone,
-		Ref:     p.Before,
+		Ref:     p.Commit.Sha,
 	}
 }

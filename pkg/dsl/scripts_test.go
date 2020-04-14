@@ -86,13 +86,13 @@ func TestMakeScriptTask(t *testing.T) {
 			},
 			Steps: []pipelinev1.Step{
 				pipelinev1.Step{
-					Container: container("", "golang:latest", []string{"sh", "-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"}, env, workspaceSourcePath),
+					Container: container("", "golang:latest", "sh", []string{"-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"}, env, workspaceSourcePath),
 				},
 				pipelinev1.Step{
-					Container: container("", "golang:latest", []string{"sh", "-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
+					Container: container("", "golang:latest", "sh", []string{"-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
 				},
 				pipelinev1.Step{
-					Container: container("", "golang:latest", []string{"sh", "-c", "cd $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
+					Container: container("", "golang:latest", "sh", []string{"-c", "cd $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
 				},
 			},
 		},
@@ -169,7 +169,8 @@ func TestConvert(t *testing.T) {
 							pipelinev1.Step{
 								Container: corev1.Container{
 									Image:      "golang:latest",
-									Command:    []string{"sh", "-c", "go fmt $(go list ./... | grep -v /vendor/)"},
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go fmt $(go list ./... | grep -v /vendor/)"},
 									WorkingDir: "$(workspaces.source.path)",
 									Env:        testEnv,
 								},
@@ -177,7 +178,8 @@ func TestConvert(t *testing.T) {
 							pipelinev1.Step{
 								Container: corev1.Container{
 									Image:      "golang:latest",
-									Command:    []string{"sh", "-c", "go vet $(go list ./... | grep -v /vendor/)"},
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go vet $(go list ./... | grep -v /vendor/)"},
 									WorkingDir: "$(workspaces.source.path)",
 									Env:        testEnv,
 								},
@@ -185,7 +187,8 @@ func TestConvert(t *testing.T) {
 							pipelinev1.Step{
 								Container: corev1.Container{
 									Image:      "golang:latest",
-									Command:    []string{"sh", "-c", "go test -race $(go list ./... | grep -v /vendor/)"},
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
 									WorkingDir: "$(workspaces.source.path)",
 									Env:        testEnv,
 								},
@@ -201,7 +204,7 @@ func TestConvert(t *testing.T) {
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
 							pipelinev1.Step{
-								Container: container("", "golang:latest", []string{"sh", "-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
+								Container: container("", "golang:latest", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
 							},
 						},
 						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
@@ -216,7 +219,9 @@ func TestConvert(t *testing.T) {
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
 							pipelinev1.Step{
-								Container: container("compile-archiver-archiver", testArchiverImage, []string{"./archiver", "--url", testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
+								Container: container("compile-archiver-archiver", testArchiverImage, "",
+									[]string{"archive", "--bucket-url",
+										testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
 							},
 						},
 						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
@@ -354,12 +359,13 @@ func TestConvertWithTektonTask(t *testing.T) {
 
 func TestContainer(t *testing.T) {
 	env := []corev1.EnvVar{corev1.EnvVar{Name: "TEST_DIR", Value: "/tmp/test"}}
-	got := container("test-name", "test-image", []string{"run", "this"}, env, "/tmp/dir")
+	got := container("test-name", "test-image", "run", []string{"this"}, env, "/tmp/dir")
 	want := corev1.Container{
 		Name:       "test-name",
 		Image:      "test-image",
-		Command:    []string{"run", "this"},
+		Command:    []string{"run"},
 		Env:        env,
+		Args:       []string{"this"},
 		WorkingDir: "/tmp/dir",
 	}
 

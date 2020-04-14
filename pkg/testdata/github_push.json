@@ -10,7 +10,9 @@
   "commits": [
 
   ],
-  "head_commit": null,
+  "head_commit": {
+    "id": "6113728f27ae82c7b1a177c8d03f9e96e0adf246"
+  },
   "repository": {
     "id": 186853002,
     "node_id": "MDEwOlJlcG9zaXRvcnkxODY4NTMwMDI=",

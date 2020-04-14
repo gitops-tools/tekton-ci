@@ -14,8 +14,8 @@ import (
 
 // Context makes it easy to execute CEL expressions on a hook body.
 type Context struct {
-	env *cel.Env
-	ctx map[string]interface{}
+	env  *cel.Env
+	Data map[string]interface{}
 }
 
 // New creates and returns a Context for evaluating expressions.
@@ -29,15 +29,15 @@ func New(hook scm.Webhook) (*Context, error) {
 		return nil, err
 	}
 	return &Context{
-		env: env,
-		ctx: ctx,
+		env:  env,
+		Data: ctx,
 	}, nil
 }
 
 // Evaluate evaluates the provided expression and returns the results of doing
 // so.
 func (c *Context) Evaluate(expr string) (ref.Val, error) {
-	return evaluate(expr, c.env, c.ctx)
+	return evaluate(expr, c.env, c.Data)
 }
 
 func (c *Context) EvaluateToString(expr string) (string, error) {
@@ -115,8 +115,8 @@ func varsFromHook(h scm.Webhook) map[string]string {
 		}
 	case *scm.PushHook:
 		return map[string]string{
-			"CI_COMMIT_SHA":       v.Before,
-			"CI_COMMIT_SHORT_SHA": v.Before[0:7],
+			"CI_COMMIT_SHA":       v.Commit.Sha,
+			"CI_COMMIT_SHORT_SHA": v.Commit.Sha[0:7],
 			"CI_COMMIT_BRANCH":    branchFromRef(v.Ref),
 		}
 	}

@@ -22,7 +22,7 @@ func TestExpressionEvaluation(t *testing.T) {
 		{
 			name:      "simple body value",
 			expr:      "hook.Action",
-			fixture:   "testdata/github_pull_request.json",
+			fixture:   "../testdata/github_pull_request.json",
 			eventType: "pull_request",
 			want:      types.String("opened"),
 		},
@@ -81,7 +81,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("failed to make env: %s", err)
 				return
 			}
-			ectx, err := makeEvalContext(hook.MakeHookFromFixture(rt, "testdata/github_pull_request.json", "pull_request"))
+			ectx, err := makeEvalContext(hook.MakeHookFromFixture(rt, "../testdata/github_pull_request.json", "pull_request"))
 			if err != nil {
 				rt.Errorf("failed to make eval context %s", err)
 				return
@@ -95,7 +95,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 }
 
 func TestContextEvaluate(t *testing.T) {
-	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +110,7 @@ func TestContextEvaluate(t *testing.T) {
 }
 
 func TestContextEvaluateToString(t *testing.T) {
-	hook := hook.MakeHookFromFixture(t, "testdata/github_pull_request.json", "pull_request")
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
 	ctx, err := New(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -125,7 +125,7 @@ func TestContextEvaluateToString(t *testing.T) {
 }
 
 func TestMakeEvalContext(t *testing.T) {
-	hook := hook.MakeHookFromFixture(t, "testdata/github_push.json", "push")
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	ctx, err := makeEvalContext(hook)
 	if err != nil {
 		t.Fatal(err)
@@ -141,12 +141,12 @@ func TestEvalContextVars(t *testing.T) {
 		eventType string
 		want      map[string]string
 	}{
-		{"testdata/github_pull_request.json", "pull_request", map[string]string{
+		{"../testdata/github_pull_request.json", "pull_request", map[string]string{
 			"CI_COMMIT_SHA":       "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
 			"CI_COMMIT_SHORT_SHA": "ec26c3e",
 			"CI_COMMIT_BRANCH":    "changes",
 		}},
-		{"testdata/github_push.json", "push", map[string]string{
+		{"../testdata/github_push.json", "push", map[string]string{
 			"CI_COMMIT_SHA":       "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
 			"CI_COMMIT_SHORT_SHA": "6113728",
 			"CI_COMMIT_BRANCH":    "simple-tag",

@@ -145,8 +145,8 @@ func makeArchiveArtifactsTask(runAfter []string, name string, env []corev1.EnvVa
 		RunAfter:   runAfter,
 		TaskSpec: makeTaskSpec(
 			pipelinev1.Step{
-				Container: container(name+"-archiver", config.ArchiverImage,
-					append([]string{"./archiver", "--url", config.ArchiveURL}, artifacts...),
+				Container: container(name+"-archiver", config.ArchiverImage, "",
+					append([]string{"archive", "--bucket-url", config.ArchiveURL}, artifacts...),
 					env, workspaceSourcePath),
 			},
 		),
@@ -157,7 +157,7 @@ func makeScriptSteps(env []corev1.EnvVar, image string, commands []string) []pip
 	steps := make([]pipelinev1.Step, len(commands))
 	for i, c := range commands {
 		steps[i] = pipelinev1.Step{
-			Container: container("", image, []string{"sh", "-c", c}, env, workspaceSourcePath),
+			Container: container("", image, "sh", []string{"-c", c}, env, workspaceSourcePath),
 		}
 	}
 	return steps
@@ -192,14 +192,18 @@ func makeEnv(m map[string]string) []corev1.EnvVar {
 	return vars
 }
 
-func container(name, image string, command []string, env []corev1.EnvVar, workDir string) corev1.Container {
-	return corev1.Container{
+func container(name, image string, command string, args []string, env []corev1.EnvVar, workDir string) corev1.Container {
+	c := corev1.Container{
 		Name:       name,
 		Image:      image,
-		Command:    command,
+		Args:       args,
 		Env:        env,
 		WorkingDir: workDir,
 	}
+	if command != "" {
+		c.Command = []string{command}
+	}
+	return c
 }
 
 func hasNever(whens []string) bool {

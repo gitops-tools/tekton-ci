@@ -154,7 +154,6 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
 
  * Support private Git repositories.
  * Watch for ending runs and delete the volume mount.
- * Provide support for calling other Tekton tasks from the script DSL.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
@@ -165,6 +164,7 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
+ * ~~Provide support for calling other Tekton tasks from the script DSL.~~
  * ~~Filtering of the events (only pushes to "master" for example).~~
  * ~~Support more events (Push) and actions other than `opened` for the script DSL format.~~
  * ~~Fix parallel running of tasks in the same stage~~
