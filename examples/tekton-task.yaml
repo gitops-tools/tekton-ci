@@ -7,7 +7,7 @@ spec:
     name: source
     description: the git source to execute on
   steps:
-    - name: ubuntu-example
+    - name: test-go-code
       image: golang:latest
       command: ["go", "test", "-v", "./..."]
       volumeMounts:

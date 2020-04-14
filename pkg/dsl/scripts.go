@@ -96,12 +96,20 @@ func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev
 	if hasNever(ruleResults) {
 		return nil, nil
 	}
-	return &pipelinev1.PipelineTask{
+	pt := &pipelinev1.PipelineTask{
 		Name:       job.Name + "-stage-" + stage,
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   runAfter,
-		TaskSpec:   makeTaskSpec(makeScriptSteps(env, image, job.Script)...),
-	}, nil
+	}
+	if job.Tekton != nil {
+		pt.TaskRef = &pipelinev1.TaskRef{
+			Name: job.Tekton.TaskRef,
+			Kind: "Task",
+		}
+	} else {
+		pt.TaskSpec = makeTaskSpec(makeScriptSteps(env, image, job.Script)...)
+	}
+	return pt, nil
 }
 
 func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask {

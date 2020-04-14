@@ -291,6 +291,67 @@ func TestConvertWithRules(t *testing.T) {
 	}
 }
 
+func TestConvertWithTektonTask(t *testing.T) {
+	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
+	p := &ci.Pipeline{
+		Image:     "golang:latest",
+		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
+		Stages: []string{
+			"test",
+		},
+		Tasks: []*ci.Task{
+			&ci.Task{
+				Name:  "format",
+				Stage: "test",
+				Tekton: &ci.TektonTask{
+					TaskRef: "my-test-task",
+				},
+			},
+		},
+	}
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
+	ctx, err := cel.New(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testEnv := makeEnv(p.Variables)
+	// TODO flatten this test
+	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		Workspaces: []pipelinev1.WorkspaceBinding{
+			pipelinev1.WorkspaceBinding{
+				Name: "git-checkout",
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "my-volume-claim-123",
+				},
+			},
+		},
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{
+				makeGitCloneTask(testEnv, source),
+				pipelinev1.PipelineTask{
+					Name: "format-stage-test",
+					TaskRef: &pipelinev1.TaskRef{
+						Name: "my-test-task",
+						Kind: "Task",
+					},
+					RunAfter:   []string{"git-clone"},
+					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+				},
+			},
+			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
+		},
+	})
+
+	if diff := cmp.Diff(want, pr); diff != "" {
+		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
+	}
+}
+
 func TestContainer(t *testing.T) {
 	env := []corev1.EnvVar{corev1.EnvVar{Name: "TEST_DIR", Value: "/tmp/test"}}
 	got := container("test-name", "test-image", []string{"run", "this"}, env, "/tmp/dir")
