@@ -81,6 +81,10 @@ image: golang:latest
 before_script:
   - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.24.0
 
+tekton:
+  # This allows configuration of the serviceAccountName for the PipelineRun.
+  serviceAccountName: test-service-account
+
 # after_script is performed before any of the tasks.
 after_script:
   - echo "after script"
@@ -108,6 +112,10 @@ tekton-task
   stage: test
   tekton:
     taskRef: my-test-task
+    # Params here are processed as CEL expressions and passed to the Task.
+    params:
+      - name: IMAGE_URL
+        expr: "'quay.io/testing/testing'"
 
 # this is another Task, it will be executed in the "build" stage, which because
 # of the definition of the stages above, will be executed after the "test" stage
