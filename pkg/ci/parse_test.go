@@ -63,7 +63,8 @@ func TestParse(t *testing.T) {
 				&Task{Name: "format",
 					Stage: DefaultStage,
 					Tekton: &TektonTask{
-						TaskRef: "my-test-task",
+						TaskRef:            "my-test-task",
+						ServiceAccountName: "testing",
 						Params: []TektonTaskParam{
 							TektonTaskParam{
 								Name:       "IMAGE_URL",

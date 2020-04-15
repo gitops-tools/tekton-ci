@@ -34,8 +34,9 @@ type Rule struct {
 
 // TektonTask is an extension for executing Tekton Tasks.
 type TektonTask struct {
-	TaskRef string
-	Params  []TektonTaskParam
+	TaskRef            string
+	ServiceAccountName string
+	Params             []TektonTaskParam
 }
 
 // TektonTaskParam is passed into a Tekton task.

@@ -128,6 +128,8 @@ func parseTekton(v interface{}) (*TektonTask, error) {
 		switch k {
 		case "taskRef":
 			t.TaskRef = v.(string)
+		case "serviceAccountName":
+			t.ServiceAccountName = v.(string)
 		case "params":
 			params, err := parseTektonTaskParams(v)
 			if err != nil {
