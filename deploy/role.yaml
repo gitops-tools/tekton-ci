@@ -14,6 +14,7 @@ rules:
   - pipelineruns
   verbs:
   - create
+  - watch
 - apiGroups:
   - ""
   resources:

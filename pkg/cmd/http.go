@@ -23,6 +23,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
+	"github.com/bigkevmcd/tekton-ci/pkg/watcher"
 )
 
 const (
@@ -66,6 +67,7 @@ func makeHTTPCmd() *cobra.Command {
 
 			namespace := viper.GetString("namespace")
 			gitClient := git.New(scmClient, secrets.New(namespace, secrets.DefaultName, coreClient))
+			go watcher.WatchPipelineRuns(tektonClient, namespace)
 			dslHandler := dsl.New(
 				gitClient,
 				tektonClient,
