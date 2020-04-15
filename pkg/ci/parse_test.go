@@ -45,11 +45,11 @@ func TestParse(t *testing.T) {
 					Script: []string{`echo "testing"`},
 					Rules: []Rule{
 						Rule{
-							If:   `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"`,
-							When: "always",
+							If:   `vars.CI_COMMIT_BRANCH != "master"`,
+							When: "never",
 						},
 						Rule{
-							If:   `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^feature/`,
+							If:   `hook.Forced == true`,
 							When: "manual",
 						},
 					},

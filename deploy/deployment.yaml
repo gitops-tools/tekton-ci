@@ -13,7 +13,7 @@ spec:
      labels:
        app.kubernetes.io/name: tekton-ci-http
     spec:
-      serviceAccountName: default
+      serviceAccountName: tekton-ci
       containers:
         - name: tekton-ci-http
           image: quay.io/bigkevmcd/tekton-ci

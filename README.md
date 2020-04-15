@@ -8,7 +8,12 @@ It has two different bits:
 
  * A "pipeline definition" to PipelineRun converter.
  * An HTTP Server that handles Hook requests from GitHub (and go-scm supported
-   hosting services)  by requesting pipeline files from the incoming repository, and processing them.
+   hosting services) by requesting pipeline files from the incoming repository, and processing them.
+
+## Table of contents
+1. [Building](#building)
+2. [Receiving GitHub hooks](#receiving-github-hooks)
+3. [DSL Hook Handler](#dsl-hook-handler)
 
 ## Building
 
@@ -29,34 +34,57 @@ Flags:
 2020/03/29 18:48:06 required flag(s) "branch", "pipeline-file", "repository-url" not set
 ```
 
-## Experimenting with this.
+A `Dockerfile` is provided for building a container image.
 
-The generated PipelineRun has an embedded Pipeline, with Tasks that execute the scripts defined in the example pipeline definition.
+## Receiving GitHub hooks
 
-It requires a [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) to carry state between tasks.
+The main use of this component is driving CI pipelines when a "push" to a
+specific occurs.
 
-There is an example [volume.yaml](./examples/volume.yaml).
+### Prerequisites
 
-By creating a volume, and executing the example pipeline, it should execute and the PipelineRun will complete.
-
-## HTTP Hook Handler.
-
-The `deploy` directory includes a Kubernetes Service `tekton-ci-http` on port `8080` which needs to be exposed to GitHub hooks, it supports two endpoints `/pipeline` and `/pipelinerun`, the first of these accepts pipeline syntax, the second supports a syntax closer to PipelineRuns.
-
-This needs a recent version of Tekton Pipelines installed, it will automatically create a 1Gi Volume claim per run! and there's nothing currently which cleans this up!
+This requires Tekton Pipelines to be installed, at least v0.11.0
 
 ```shell
-kubectl apply -f deploy/
+$ kubectl apply -f https://github.com/tektoncd/pipeline/releases/download/v0.11.0/release.yaml
 ```
 
-After this, create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a pull-request is created.
+### Deploying the container
 
-When the handler receives the `pull_request` hook notification, it will try and
-get a configuration file from the repository and process it.
+The hook receiver needs to be deployed to Kubernetes.
 
-## /pipeline endpoint
+In the [`deploy`](./deploy) directory, there are two files:
+ * `role.yaml` with a `ServiceAccount` **tekton-ci**, along with a `Role` and
+   `RoleBinding` that allows the `ServiceAccount` to create volumes and
+   pipeline runs.
+   `ServiceAccount`.
+ * `deployment.yaml` which contains a Kubernetes `Deployment` resource, and a
+   `Service` to expose the deployment.
 
-This supports a GitLab-CI-like syntax, capable of executing scripts, it uses a [Persistent Volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) to transport the source and output between tasks.
+You'll need to expose these outside of your cluster, so that GitHub hooks can
+hit the endpoint.
+
+For simple testing, you can port-forward and use ngrok.
+
+```shell
+$ kubectl port-forward tekton-ci-http 8080
+# In a separate terminal window
+$ ngrok http 8080
+```
+
+Then create a [JSON Webhook](https://developer.github.com/webhooks/creating/) to
+point at your endpoint, you need to choose a path for your hook endpoint:
+
+ * /pipeline - [this](#dsl-hook-handler) interprets a [GitLab CI](https://docs.gitlab.com/ee/ci/) like syntax.
+ * /pipelinerun - [this](#spec-hook-handler) provides for a way to execute [Tekton Pipeline](https://github.com/tektoncd/pipeline/blob/master/docs/pipelines.md) definitions.
+
+## DSL Hook Handler
+
+Once you have a hook pointing at the correct path (/pipeline) then  create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a push hook is created.
+
+When the handler receives the `push` hook notification, it will try and get a configuration file from the repository and process it.
+
+To do this, it first of all creates a `PersistentVolumeClaim` (this is currently 1Gi) and then converts the pipeline definition into a PipelineRun with an embedded Pipeline and embedded Tasks, including a task that checks out the source code then begins to execute the scripts.
 
 ### Currently understood syntax
 
@@ -81,7 +109,7 @@ stages:
 
 # This is a "Task" called "format", it's executed in the "test" stage above.
 # It will be executed in the top-level directory of the checked out code.
-format:
+test:
   stage: test
   script:
     - go mod download
@@ -89,6 +117,12 @@ format:
     - go vet ./...
     - ./bin/golangci-lint run
     - go test -race ./...
+
+# This will execute the non-cluster Task "my-test-task".
+tekton-task
+  stage: test
+  tekton:
+    taskRef: my-test-task
 
 # this is another Task, it will be executed in the "build" stage, which because
 # of the definition of the stages above, will be executed after the "test" stage
@@ -100,15 +134,15 @@ compile:
   # If artifacts are specified as part of a Task, an extra container is
   # scheduled to execute after the task, which is executed in the same volume.
   # this will receive the list of artifacts and can upload the artifact
-  # somewhere - admittedly this is a bit vague.
+  # somewhere - the image is configurable.
   artifacts:
     paths:
       - github-tool
 ```
 
-## /pipelinerun endpoint
+## Spec Hook Handler
 
-This supports standard [PipelineRuns](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md) with a wrapper around them to automate extraction of the arguments from the incoming hook body.
+The other HTTP handler is at `/pipelinerun`, this supports standard [PipelineRuns](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md) with a wrapper around them to automate extraction of the arguments from the incoming hook body.
 
 The example below, if placed in `.tekton/pull_request.yaml` will trigger a simple script that echoes the SHA of the commit when a pull-request is opened.
 
@@ -146,11 +180,9 @@ pipelineRunSpec:
             value: $(params.COMMIT_SHA)
 ```
 
-## HTTP server
-
-See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
-
 ## Things to do
+
+In no particular order.
 
  * Support private Git repositories.
  * Watch for ending runs and delete the volume mount.
@@ -164,6 +196,9 @@ See the deployment file in [deployment.yaml](./deploy/deployment.yaml).
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
+ * Support for secrets to validate incoming Webhooks.
+ * Configurability of volume creation.
+ * Allow passing params from the Tekton task mechanism through to the Task.
  * ~~Provide support for calling other Tekton tasks from the script DSL.~~
  * ~~Filtering of the events (only pushes to "master" for example).~~
  * ~~Support more events (Push) and actions other than `opened` for the script DSL format.~~
