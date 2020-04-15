@@ -8,6 +8,7 @@ type Pipeline struct {
 	AfterScript  []string
 	Stages       []string
 	Tasks        []*Task
+	TektonConfig *TektonConfig
 }
 
 // Task represents the parsed Task from the Pipeline.
@@ -34,15 +35,18 @@ type Rule struct {
 
 // TektonTask is an extension for executing Tekton Tasks.
 type TektonTask struct {
-	TaskRef            string
-	ServiceAccountName string
-	Params             []TektonTaskParam
+	TaskRef string
+	Params  []TektonTaskParam
 }
 
 // TektonTaskParam is passed into a Tekton task.
 type TektonTaskParam struct {
 	Name       string
 	Expression string
+}
+
+type TektonConfig struct {
+	ServiceAccountName string
 }
 
 // TasksForStage returns the named jobs for a specific stage.

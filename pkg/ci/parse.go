@@ -45,6 +45,8 @@ func parseRaw(raw map[string]interface{}) (*Pipeline, error) {
 			cfg.AfterScript = stringSlice(v)
 		case "stages":
 			cfg.Stages = stringSlice(v)
+		case "tekton":
+			cfg.TektonConfig = parseTektonConfig(v)
 		default:
 			task, err := parseTask(k, v)
 			if err != nil {
@@ -77,6 +79,17 @@ func stringSlice(vars interface{}) []string {
 		strings = append(strings, v.(string))
 	}
 	return strings
+}
+
+func parseTektonConfig(v interface{}) *TektonConfig {
+	t := &TektonConfig{}
+	for k, v := range v.(map[string]interface{}) {
+		switch k {
+		case "serviceAccountName":
+			t.ServiceAccountName = v.(string)
+		}
+	}
+	return t
 }
 
 func parseTask(name string, v interface{}) (*Task, error) {
@@ -128,8 +141,6 @@ func parseTekton(v interface{}) (*TektonTask, error) {
 		switch k {
 		case "taskRef":
 			t.TaskRef = v.(string)
-		case "serviceAccountName":
-			t.ServiceAccountName = v.(string)
 		case "params":
 			params, err := parseTektonTaskParams(v)
 			if err != nil {

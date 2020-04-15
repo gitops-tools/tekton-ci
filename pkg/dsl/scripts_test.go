@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	testPipelineRunPrefix = "my-pipeline-run-"
-	testArchiverImage     = "quay.io/testing/testing"
-	testArchiveURL        = "https://example/com/testing"
-	testRepoURL           = "https://github.com/myorg/testing.git"
+	testPipelineRunPrefix  = "my-pipeline-run-"
+	testArchiverImage      = "quay.io/testing/testing"
+	testArchiveURL         = "https://example/com/testing"
+	testRepoURL            = "https://github.com/myorg/testing.git"
+	testServiceAccountName = "test-account"
 )
 
 func TestMakeGitCloneTask(t *testing.T) {
@@ -150,6 +151,7 @@ func TestConvert(t *testing.T) {
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		ServiceAccountName: testServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			pipelinev1.WorkspaceBinding{
 				Name: "git-checkout",
@@ -275,6 +277,7 @@ func TestConvertWithRules(t *testing.T) {
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		ServiceAccountName: testServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			pipelinev1.WorkspaceBinding{
 				Name: "git-checkout",
@@ -304,6 +307,9 @@ func TestConvertWithTektonTask(t *testing.T) {
 		Stages: []string{
 			"test",
 		},
+		TektonConfig: &ci.TektonConfig{
+			ServiceAccountName: "testing",
+		},
 		Tasks: []*ci.Task{
 			&ci.Task{
 				Name:  "format",
@@ -330,6 +336,7 @@ func TestConvertWithTektonTask(t *testing.T) {
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		ServiceAccountName: "testing",
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			pipelinev1.WorkspaceBinding{
 				Name: "git-checkout",
@@ -404,8 +411,9 @@ func TestMakeScriptSteps(t *testing.T) {
 
 func testConfiguration() *Configuration {
 	return &Configuration{
-		PipelineRunPrefix: testPipelineRunPrefix,
-		ArchiverImage:     testArchiverImage,
-		ArchiveURL:        testArchiveURL,
+		PipelineRunPrefix:         testPipelineRunPrefix,
+		ArchiverImage:             testArchiverImage,
+		ArchiveURL:                testArchiveURL,
+		DefaultServiceAccountName: testServiceAccountName,
 	}
 }

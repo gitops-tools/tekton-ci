@@ -59,12 +59,14 @@ func TestParse(t *testing.T) {
 		{"testdata/tekton-task.yaml", &Pipeline{
 			Image:  "golang:latest",
 			Stages: []string{DefaultStage},
+			TektonConfig: &TektonConfig{
+				ServiceAccountName: "testing",
+			},
 			Tasks: []*Task{
 				&Task{Name: "format",
 					Stage: DefaultStage,
 					Tekton: &TektonTask{
-						TaskRef:            "my-test-task",
-						ServiceAccountName: "testing",
+						TaskRef: "my-test-task",
 						Params: []TektonTaskParam{
 							TektonTaskParam{
 								Name:       "IMAGE_URL",

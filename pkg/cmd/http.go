@@ -100,9 +100,10 @@ func makeHTTPCmd() *cobra.Command {
 
 func newDSLConfig() *dsl.Configuration {
 	return &dsl.Configuration{
-		ArchiverImage:     viper.GetString("archiver-image"),
-		ArchiveURL:        viper.GetString("archive-url"),
-		PipelineRunPrefix: viper.GetString("pipelinerun-prefix"),
+		ArchiverImage:             viper.GetString("archiver-image"),
+		ArchiveURL:                viper.GetString("archive-url"),
+		PipelineRunPrefix:         viper.GetString("pipelinerun-prefix"),
+		DefaultServiceAccountName: viper.GetString("pipelinerun-serviceaccount-name"),
 	}
 }
 
@@ -122,10 +123,19 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 	)
 	logIfError(viper.BindPFlag("archive-url", cmd.Flags().Lookup("archive-url")))
 	logIfError(cmd.MarkFlagRequired("archive-url"))
+
 	cmd.Flags().String(
 		"pipelinerun-prefix",
 		defaultPipelineRunPrefix,
 		"used for the generateName in the generated PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-prefix", cmd.Flags().Lookup("pipelinerun-prefix")))
+
+	cmd.Flags().String(
+		"pipelinerun-serviceaccount-name",
+		"default",
+		"used for the generateName in the generated PipelineRuns",
+	)
+	logIfError(viper.BindPFlag("pipelinerun-serviceaccount-name", cmd.Flags().Lookup("pipelinerun-serviceaccount-name")))
+
 }

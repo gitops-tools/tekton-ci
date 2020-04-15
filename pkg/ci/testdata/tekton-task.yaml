@@ -1,9 +1,10 @@
 image: golang:latest
 
+tekton:
+  serviceAccountName: testing
 format:
   tekton:
     taskRef: my-test-task
-    serviceAccountName: testing
     params:
       - name: IMAGE_URL
         expr: quay.io/testing/testing

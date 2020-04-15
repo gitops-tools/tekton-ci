@@ -1,27 +1,26 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: buildah-task
 spec:
   workspaces:
     - name: source
-  inputs:
-    params:
-    - name: BUILDER_IMAGE
-      description: The location of the buildah builder image.
-      default: quay.io/buildah/stable:v1.11.3
-      type: string
-    - name: DOCKERFILE
-      description: Path to the Dockerfile to build.
-      default: ./Dockerfile
-      type: string
-    - name: TLSVERIFY
-      description: Verify the TLS on the registry endpoint (for push/pull to a non-TLS registry).
-      default: "true"
-      type: string
-    - name: IMAGE_URL
-      description: The image to push containers to.
-      type: string
+  params:
+  - name: BUILDER_IMAGE
+    description: The location of the buildah builder image.
+    default: quay.io/buildah/stable:v1.11.3
+    type: string
+  - name: DOCKERFILE
+    description: Path to the Dockerfile to build.
+    default: ./Dockerfile
+    type: string
+  - name: TLSVERIFY
+    description: Verify the TLS on the registry endpoint (for push/pull to a non-TLS registry).
+    default: "true"
+    type: string
+  - name: IMAGE_URL
+    description: The image to push containers to.
+    type: string
   steps:
   - name: build
     image: $(inputs.params.BUILDER_IMAGE)

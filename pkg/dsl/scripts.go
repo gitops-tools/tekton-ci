@@ -62,6 +62,7 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 		tasks = append(tasks, makeScriptTask(afterStepTaskName, previous, env, p.Image, p.AfterScript))
 	}
 	spec := pipelinev1.PipelineRunSpec{
+		ServiceAccountName: config.DefaultServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			pipelinev1.WorkspaceBinding{
 				Name: workspaceName,
@@ -78,6 +79,9 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 			},
 			Tasks: tasks,
 		},
+	}
+	if p.TektonConfig != nil {
+		spec.ServiceAccountName = p.TektonConfig.ServiceAccountName
 	}
 	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec), nil
 }
