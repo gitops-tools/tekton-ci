@@ -64,6 +64,12 @@ func TestParse(t *testing.T) {
 					Stage: DefaultStage,
 					Tekton: &TektonTask{
 						TaskRef: "my-test-task",
+						Params: []TektonTaskParam{
+							TektonTaskParam{
+								Name:       "IMAGE_URL",
+								Expression: "quay.io/testing/testing",
+							},
+						},
 					},
 				},
 			},
@@ -97,6 +103,7 @@ func TestParseBadFiles(t *testing.T) {
 	}{
 		{"testdata/bad-task-no-script.yaml", `invalid task "format": missing script`},
 		{"testdata/bad-tekton-task.yaml", `invalid task "format": provided Tekton task and Script`},
+		{"testdata/bad-tekton-task-params.yaml", `bad Tekton task parameter`},
 	}
 
 	for _, tt := range parseTests {

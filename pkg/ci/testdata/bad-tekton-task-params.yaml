@@ -5,4 +5,3 @@ format:
     taskRef: my-test-task
     params:
       - name: IMAGE_URL
-        expr: quay.io/testing/testing

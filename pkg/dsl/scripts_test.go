@@ -310,6 +310,9 @@ func TestConvertWithTektonTask(t *testing.T) {
 				Stage: "test",
 				Tekton: &ci.TektonTask{
 					TaskRef: "my-test-task",
+					Params: []ci.TektonTaskParam{
+						ci.TektonTaskParam{Name: "MY_TEST_PARAM", Expression: "vars.CI_COMMIT_BRANCH"},
+					},
 				},
 			},
 		},
@@ -343,6 +346,12 @@ func TestConvertWithTektonTask(t *testing.T) {
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "my-test-task",
 						Kind: "Task",
+					},
+					Params: []pipelinev1.Param{
+						pipelinev1.Param{
+							Name:  "MY_TEST_PARAM",
+							Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "changes"},
+						},
 					},
 					RunAfter:   []string{"git-clone"},
 					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},

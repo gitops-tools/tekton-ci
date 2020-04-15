@@ -88,7 +88,11 @@ func parseTask(name string, v interface{}) (*Task, error) {
 		case "script":
 			t.Script = stringSlice(v)
 		case "tekton":
-			t.Tekton = parseTekton(v)
+			tekton, err := parseTekton(v)
+			if err != nil {
+				return nil, err
+			}
+			t.Tekton = tekton
 		case "rules":
 			t.Rules = parseRules(v)
 		case "artifacts":
@@ -118,15 +122,21 @@ func parseArtifacts(v interface{}) Artifacts {
 	return a
 }
 
-func parseTekton(v interface{}) *TektonTask {
+func parseTekton(v interface{}) (*TektonTask, error) {
 	t := &TektonTask{}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
 		case "taskRef":
 			t.TaskRef = v.(string)
+		case "params":
+			params, err := parseTektonTaskParams(v)
+			if err != nil {
+				return nil, err
+			}
+			t.Params = params
 		}
 	}
-	return t
+	return t, nil
 }
 
 func parseRules(v interface{}) []Rule {
@@ -159,4 +169,25 @@ func findStages(tasks []*Task) []string {
 		return stages
 	}
 	return []string{DefaultStage}
+}
+
+// TODO: this should validate params.
+func parseTektonTaskParams(v interface{}) ([]TektonTaskParam, error) {
+	params := []TektonTaskParam{}
+	for _, rule := range v.([]interface{}) {
+		param := TektonTaskParam{}
+		for k, v := range rule.(map[string]interface{}) {
+			switch k {
+			case "name":
+				param.Name = v.(string)
+			case "expr":
+				param.Expression = v.(string)
+			}
+		}
+		if param.Expression == "" || param.Name == "" {
+			return nil, fmt.Errorf("bad Tekton task parameter: %#v", v)
+		}
+		params = append(params, param)
+	}
+	return params, nil
 }

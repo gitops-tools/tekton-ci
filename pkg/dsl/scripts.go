@@ -106,6 +106,11 @@ func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev
 			Name: job.Tekton.TaskRef,
 			Kind: "Task",
 		}
+		params, err := paramsToParams(ctx, job.Tekton.Params)
+		if err != nil {
+			return nil, err
+		}
+		pt.Params = params
 	} else {
 		pt.TaskSpec = makeTaskSpec(makeScriptSteps(env, image, job.Script)...)
 	}
@@ -213,4 +218,16 @@ func hasNever(whens []string) bool {
 		}
 	}
 	return false
+}
+
+func paramsToParams(ctx *cel.Context, ciParams []ci.TektonTaskParam) ([]pipelinev1.Param, error) {
+	params := []pipelinev1.Param{}
+	for _, c := range ciParams {
+		v, err := ctx.EvaluateToString(c.Expression)
+		if err != nil {
+			return nil, err
+		}
+		params = append(params, pipelinev1.Param{Name: c.Name, Value: pipelinev1.ArrayOrString{StringVal: v, Type: "string"}})
+	}
+	return params, nil
 }

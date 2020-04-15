@@ -35,6 +35,13 @@ type Rule struct {
 // TektonTask is an extension for executing Tekton Tasks.
 type TektonTask struct {
 	TaskRef string
+	Params  []TektonTaskParam
+}
+
+// TektonTaskParam is passed into a Tekton task.
+type TektonTaskParam struct {
+	Name       string
+	Expression string
 }
 
 // TasksForStage returns the named jobs for a specific stage.
