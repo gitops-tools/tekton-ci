@@ -14,25 +14,10 @@ It has two different bits:
 1. [Building](#building)
 2. [Receiving GitHub hooks](#receiving-github-hooks)
 3. [DSL Hook Handler](#dsl-hook-handler)
+4. [Testing](#testing)
+5. [Things to do](#things-to-do)
 
 ## Building
-
-```shell
-$ go build ./cmd/testing
-$ ./testing
-Error: required flag(s) "branch", "pipeline-file", "repository-url" not set
-Usage:
-  testing [flags]
-
-Flags:
-      --branch string             checkout and execute against this branch (default "master")
-  -h, --help                      help for testing
-      --pipeline-file string      YAML with pipeline description
-      --pipelinerun-name string   inserted into the generated PipelineRun resource (default "test-pipelinerun")
-      --repository-url string     e.g. https://github.com/my-org/my-repo.git
-
-2020/03/29 18:48:06 required flag(s) "branch", "pipeline-file", "repository-url" not set
-```
 
 A `Dockerfile` is provided for building a container image.
 
@@ -178,6 +163,12 @@ pipelineRunSpec:
         params:
           - name: COMMIT
             value: $(params.COMMIT_SHA)
+```
+
+## Testing
+
+```shell
+$ go test -v ./...
 ```
 
 ## Things to do
