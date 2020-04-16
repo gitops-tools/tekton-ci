@@ -11,14 +11,17 @@ spec:
       image: golang:latest
       workingDir: $(workspaces.source.path)
       command: ["go", "mod", "download"]
+
     - name: go-vet
       image: golang:latest
       workingDir: $(workspaces.source.path)
       command: ["go", "vet", "./..."]
+
     - name: ci-lint
-      image: golang:latest
+      image: golangci/golangci-lint:v1.24.0
       workingDir: $(workspaces.source.path)
-      command: ["./bin/golangci-lint", "run"]
+      command: ["golangci-lint", "run"]
+
     - name: go-test
       image: golang:latest
       workingDir: $(workspaces.source.path)
