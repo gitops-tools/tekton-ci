@@ -184,6 +184,7 @@ $ go test -v ./...
 In no particular order.
 
  * Support private Git repositories.
+ * Metrics*
  * Watch for ending runs and delete the volume mount.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
