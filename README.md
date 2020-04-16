@@ -184,7 +184,7 @@ $ go test -v ./...
 In no particular order.
 
  * Support private Git repositories.
- * Metrics*
+ * Metrics.
  * Watch for ending runs and delete the volume mount.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
@@ -198,7 +198,7 @@ In no particular order.
    tasks.
  * Support for secrets to validate incoming Webhooks.
  * Configurability of volume creation.
- * Allow passing params from the Tekton task mechanism through to the Task.
+ * ~~Allow passing params from the Tekton task mechanism through to the Task.~~
  * ~~Provide support for calling other Tekton tasks from the script DSL.~~
  * ~~Filtering of the events (only pushes to "master" for example).~~
  * ~~Support more events (Push) and actions other than `opened` for the script DSL format.~~
