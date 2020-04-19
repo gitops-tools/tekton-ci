@@ -51,7 +51,7 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	}
 	// check that it evaluated the parameters in the example.
 	want := []pipelinev1.Param{
-		pipelinev1.Param{
+		{
 			Name: "COMMIT_SHA",
 			Value: pipelinev1.ArrayOrString{
 				Type:      "string",
@@ -120,7 +120,7 @@ func TestHandlePushEvent(t *testing.T) {
 	}
 	// check that it evaluated the parameters in the example.
 	want := []pipelinev1.Param{
-		pipelinev1.Param{
+		{
 			Name: "COMMIT_SHA",
 			Value: pipelinev1.ArrayOrString{
 				Type:      "string",

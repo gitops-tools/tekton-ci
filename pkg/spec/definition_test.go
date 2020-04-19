@@ -12,14 +12,14 @@ import (
 
 var testPipelineSpec = &pipelinev1.PipelineSpec{
 	Params: []pipelinev1.ParamSpec{
-		pipelinev1.ParamSpec{
+		{
 			Name:        "COMMIT_SHA",
 			Type:        "string",
 			Description: "the SHA for the pull_request",
 		},
 	},
 	Tasks: []pipelinev1.PipelineTask{
-		pipelinev1.PipelineTask{
+		{
 			Name: "echo-commit-sha",
 			TaskSpec: &pipelinev1.TaskSpec{
 				Steps: []pipelinev1.Step{
@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 			&PipelineDefinition{
 				Filter: "hook.Action == 'opened'",
 				ParamBindings: []ParamBinding{
-					ParamBinding{Name: "COMMIT_SHA", Expression: "hook.PullRequest.Sha"},
+					{Name: "COMMIT_SHA", Expression: "hook.PullRequest.Sha"},
 				},
 				PipelineRunSpec: pipelinev1.PipelineRunSpec{
 					PipelineSpec: testPipelineSpec,

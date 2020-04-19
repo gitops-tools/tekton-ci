@@ -45,6 +45,8 @@ type TektonTaskParam struct {
 	Expression string
 }
 
+// TektonConfig provides global configuration for the DSL script specifically
+// for Tekton.
 type TektonConfig struct {
 	ServiceAccountName string
 }

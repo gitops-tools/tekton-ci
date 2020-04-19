@@ -48,8 +48,8 @@ var (
 
 func TestTasksForStage(t *testing.T) {
 	want := map[string][]string{
-		"test":  []string{"format"},
-		"build": []string{"compile"},
+		"test":  {"format"},
+		"build": {"compile"},
 	}
 
 	for k, want := range want {

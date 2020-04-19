@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
@@ -30,22 +32,22 @@ func TestMakeGitCloneTask(t *testing.T) {
 	want := pipelinev1.PipelineTask{
 		Name: gitCloneTaskName,
 		Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{
-			pipelinev1.WorkspacePipelineTaskBinding{Name: "source", Workspace: workspaceName},
+			{Name: "source", Workspace: workspaceName},
 		},
 		TaskSpec: &pipelinev1.TaskSpec{
 			Workspaces: []pipelinev1.WorkspaceDeclaration{
-				pipelinev1.WorkspaceDeclaration{
+				{
 					Name: "source",
 				},
 			},
 			Steps: []pipelinev1.Step{
-				pipelinev1.Step{
+				{
 					Container: corev1.Container{
 						Name:    "git-clone",
 						Image:   "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init",
 						Command: []string{"/ko-app/git-init", "-url", testRepoURL, "-revision", "master", "-path", workspaceSourcePath},
 						Env: []corev1.EnvVar{
-							corev1.EnvVar{
+							{
 								Name:  "CI_PROJECT_DIR",
 								Value: "$(workspaces.source.path)",
 							},
@@ -77,22 +79,22 @@ func TestMakeScriptTask(t *testing.T) {
 		Name:     "test-script-task",
 		RunAfter: []string{gitCloneTaskName},
 		Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{
-			pipelinev1.WorkspacePipelineTaskBinding{Name: "source", Workspace: workspaceName},
+			{Name: "source", Workspace: workspaceName},
 		},
 		TaskSpec: &pipelinev1.TaskSpec{
 			Workspaces: []pipelinev1.WorkspaceDeclaration{
-				pipelinev1.WorkspaceDeclaration{
+				{
 					Name: "source",
 				},
 			},
 			Steps: []pipelinev1.Step{
-				pipelinev1.Step{
+				{
 					Container: container("", "golang:latest", "sh", []string{"-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"}, env, workspaceSourcePath),
 				},
-				pipelinev1.Step{
+				{
 					Container: container("", "golang:latest", "sh", []string{"-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
 				},
-				pipelinev1.Step{
+				{
 					Container: container("", "golang:latest", "sh", []string{"-c", "cd $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
 				},
 			},
@@ -105,6 +107,7 @@ func TestMakeScriptTask(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "master"}
 	p := &ci.Pipeline{
 		Image:     "golang:latest",
@@ -118,7 +121,7 @@ func TestConvert(t *testing.T) {
 			"test", "build",
 		},
 		Tasks: []*ci.Task{
-			&ci.Task{
+			{
 				Name:  "format",
 				Stage: "test",
 				Script: []string{
@@ -127,7 +130,7 @@ func TestConvert(t *testing.T) {
 					"go test -race $(go list ./... | grep -v /vendor/)",
 				},
 			},
-			&ci.Task{
+			{
 				Name:  "compile",
 				Stage: "build",
 				Script: []string{
@@ -143,7 +146,7 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", nil)
+	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +156,7 @@ func TestConvert(t *testing.T) {
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
 		ServiceAccountName: testServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
-			pipelinev1.WorkspaceBinding{
+			{
 				Name: "git-checkout",
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: "my-volume-claim-123",
@@ -164,11 +167,11 @@ func TestConvert(t *testing.T) {
 			Tasks: []pipelinev1.PipelineTask{
 				makeGitCloneTask(testEnv, source),
 				makeScriptTask(beforeStepTaskName, []string{gitCloneTaskName}, testEnv, p.Image, p.BeforeScript),
-				pipelinev1.PipelineTask{
+				{
 					Name: "format-stage-test",
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
-							pipelinev1.Step{
+							{
 								Container: corev1.Container{
 									Image:      "golang:latest",
 									Command:    []string{"sh"},
@@ -177,7 +180,7 @@ func TestConvert(t *testing.T) {
 									Env:        testEnv,
 								},
 							},
-							pipelinev1.Step{
+							{
 								Container: corev1.Container{
 									Image:      "golang:latest",
 									Command:    []string{"sh"},
@@ -186,7 +189,7 @@ func TestConvert(t *testing.T) {
 									Env:        testEnv,
 								},
 							},
-							pipelinev1.Step{
+							{
 								Container: corev1.Container{
 									Image:      "golang:latest",
 									Command:    []string{"sh"},
@@ -201,11 +204,11 @@ func TestConvert(t *testing.T) {
 					RunAfter:   []string{beforeStepTaskName},
 					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
 				},
-				pipelinev1.PipelineTask{
+				{
 					Name: "compile-stage-build",
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
-							pipelinev1.Step{
+							{
 								Container: container("", "golang:latest", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
 							},
 						},
@@ -214,13 +217,13 @@ func TestConvert(t *testing.T) {
 					RunAfter:   []string{"format-stage-test"},
 					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
 				},
-				pipelinev1.PipelineTask{
+				{
 					Name:       "compile-archiver",
 					RunAfter:   []string{"format-stage-test"},
 					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
-							pipelinev1.Step{
+							{
 								Container: container("compile-archiver-archiver", testArchiverImage, "",
 									[]string{"archive", "--bucket-url",
 										testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
@@ -249,14 +252,14 @@ func TestConvertWithRules(t *testing.T) {
 			"test",
 		},
 		Tasks: []*ci.Task{
-			&ci.Task{
+			{
 				Name:  "format",
 				Stage: "test",
 				Script: []string{
 					"go test -race $(go list ./... | grep -v /vendor/)",
 				},
 				Rules: []ci.Rule{
-					ci.Rule{
+					{
 						If:   `hook.PullRequest.Head.Ref != "master"`,
 						When: "never",
 					},
@@ -269,7 +272,8 @@ func TestConvertWithRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", ctx)
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +283,7 @@ func TestConvertWithRules(t *testing.T) {
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
 		ServiceAccountName: testServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
-			pipelinev1.WorkspaceBinding{
+			{
 				Name: "git-checkout",
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: "my-volume-claim-123",
@@ -311,13 +315,13 @@ func TestConvertWithTektonTask(t *testing.T) {
 			ServiceAccountName: "testing",
 		},
 		Tasks: []*ci.Task{
-			&ci.Task{
+			{
 				Name:  "format",
 				Stage: "test",
 				Tekton: &ci.TektonTask{
 					TaskRef: "my-test-task",
 					Params: []ci.TektonTaskParam{
-						ci.TektonTaskParam{Name: "MY_TEST_PARAM", Expression: "vars.CI_COMMIT_BRANCH"},
+						{Name: "MY_TEST_PARAM", Expression: "vars.CI_COMMIT_BRANCH"},
 					},
 				},
 			},
@@ -328,7 +332,8 @@ func TestConvertWithTektonTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pr, err := Convert(p, testConfiguration(), source, "my-volume-claim-123", ctx)
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,7 +343,7 @@ func TestConvertWithTektonTask(t *testing.T) {
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
 		ServiceAccountName: "testing",
 		Workspaces: []pipelinev1.WorkspaceBinding{
-			pipelinev1.WorkspaceBinding{
+			{
 				Name: "git-checkout",
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: "my-volume-claim-123",
@@ -348,14 +353,14 @@ func TestConvertWithTektonTask(t *testing.T) {
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Tasks: []pipelinev1.PipelineTask{
 				makeGitCloneTask(testEnv, source),
-				pipelinev1.PipelineTask{
+				{
 					Name: "format-stage-test",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "my-test-task",
 						Kind: "Task",
 					},
 					Params: []pipelinev1.Param{
-						pipelinev1.Param{
+						{
 							Name:  "MY_TEST_PARAM",
 							Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "changes"},
 						},
@@ -374,7 +379,7 @@ func TestConvertWithTektonTask(t *testing.T) {
 }
 
 func TestContainer(t *testing.T) {
-	env := []corev1.EnvVar{corev1.EnvVar{Name: "TEST_DIR", Value: "/tmp/test"}}
+	env := []corev1.EnvVar{{Name: "TEST_DIR", Value: "/tmp/test"}}
 	got := container("test-name", "test-image", "run", []string{"this"}, env, "/tmp/dir")
 	want := corev1.Container{
 		Name:       "test-name",

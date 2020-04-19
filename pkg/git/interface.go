@@ -7,6 +7,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
+// SCM is a wrapper around go-scm's Client implementation.
 type SCM interface {
 	// ParseWebhookRequest returns the webhook payload.
 	ParseWebhookRequest(req *http.Request) (scm.Webhook, error)

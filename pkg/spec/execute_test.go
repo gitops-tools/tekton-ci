@@ -34,7 +34,7 @@ func TestExecute(t *testing.T) {
 	}
 	want := resources.PipelineRun("pipelineRun", "new-pipeline-run-", pipelinev1.PipelineRunSpec{
 		Params: []pipelinev1.Param{
-			pipelinev1.Param{
+			{
 				Name:  "COMMIT_SHA",
 				Value: pipelinev1.ArrayOrString{StringVal: testSHA, Type: "string"},
 			},

@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+// MakeAPIServer is used during testing to create an HTTP server to return
+// fixtures if the request matches.
 func MakeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != urlPath {

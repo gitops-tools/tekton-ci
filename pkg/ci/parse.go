@@ -8,6 +8,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// DefaultStage is the stage into which steps that have no stage are placed
+// during the parsing process.
 const DefaultStage = "default"
 
 // Parse decodes YAML describing a CI pipeline and returns the configuration.

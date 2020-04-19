@@ -17,7 +17,7 @@ func ReadJSONFixture(t *testing.T, filename string) map[string]interface{} {
 	return UnmarshalJSON(t, b)
 }
 
-// UnmarshalJSON
+// UnmarshalJSON unmarshals a byte-slice to a map.
 func UnmarshalJSON(t *testing.T, b []byte) map[string]interface{} {
 	t.Helper()
 	result := map[string]interface{}{}

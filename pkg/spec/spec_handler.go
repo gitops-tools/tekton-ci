@@ -20,8 +20,9 @@ const (
 	defaultPipelineRunPrefix = "test-pipelinerun-"
 )
 
-// Handler implements the GitEventHandler interface and processes
-// .tekton_ci.yaml files in a repository.
+// Handler implements the http.Handler interface, it grabs pipeline
+// configurations from the incoming Hook's repository and attempts to generate a
+// PipelineRun from them.
 type Handler struct {
 	scmClient      git.SCM
 	log            logger.Logger
@@ -29,6 +30,7 @@ type Handler struct {
 	namespace      string
 }
 
+// New creates and returns a new Handler.
 func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
@@ -38,6 +40,7 @@ func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, namespac
 	}
 }
 
+// ServeHTTP implements the http.Handler interface.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hook, err := h.scmClient.ParseWebhookRequest(r)
 	if err != nil {

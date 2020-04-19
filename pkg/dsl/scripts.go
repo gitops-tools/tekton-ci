@@ -7,6 +7,7 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
@@ -20,6 +21,7 @@ const (
 	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
 )
 
+// Source wraps a git clone URL and a specific ref to checkout.
 type Source struct {
 	RepoURL string
 	Ref     string
@@ -28,20 +30,24 @@ type Source struct {
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
-func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context) (*pipelinev1.PipelineRun, error) {
+func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context) (*pipelinev1.PipelineRun, error) {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
 	}
+	log.Infow("converting pipeline", "volumeClaimName", volumeClaimName, "ref", src.Ref, "repoURL", src.RepoURL)
 	previous := []string{gitCloneTaskName}
 	if len(p.BeforeScript) > 0 {
+		log.Infow("processing before_script", "scriptLen", len(p.BeforeScript))
 		tasks = append(tasks, makeScriptTask(beforeStepTaskName, previous, env, p.Image, p.BeforeScript))
 		previous = []string{beforeStepTaskName}
 	}
 	for _, name := range p.Stages {
+		log.Infow("processing stage", "stage", name)
 		stageTasks := []string{}
 		for _, taskName := range p.TasksForStage(name) {
 			task := p.Task(taskName)
+			log.Infow("processing task", "task", taskName)
 			stageTask, err := makeTaskForStage(task, name, previous, env, p.Image, ctx)
 			if err != nil {
 				return nil, err
@@ -64,7 +70,7 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 	spec := pipelinev1.PipelineRunSpec{
 		ServiceAccountName: config.DefaultServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
-			pipelinev1.WorkspaceBinding{
+			{
 				Name: workspaceName,
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: volumeClaimName,
@@ -73,7 +79,7 @@ func Convert(p *ci.Pipeline, config *Configuration, src *Source, volumeClaimName
 		},
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{
-				pipelinev1.WorkspacePipelineDeclaration{
+				{
 					Name: workspaceName,
 				},
 			},
@@ -174,7 +180,7 @@ func makeScriptSteps(env []corev1.EnvVar, image string, commands []string) []pip
 
 func workspacePipelineTaskBindings() []pipelinev1.WorkspacePipelineTaskBinding {
 	return []pipelinev1.WorkspacePipelineTaskBinding{
-		pipelinev1.WorkspacePipelineTaskBinding{
+		{
 			Name:      workspaceBindingName,
 			Workspace: workspaceName,
 		},
@@ -184,7 +190,7 @@ func workspacePipelineTaskBindings() []pipelinev1.WorkspacePipelineTaskBinding {
 func makeTaskSpec(steps ...pipelinev1.Step) *pipelinev1.TaskSpec {
 	return &pipelinev1.TaskSpec{
 		Workspaces: []pipelinev1.WorkspaceDeclaration{
-			pipelinev1.WorkspaceDeclaration{
+			{
 				Name: workspaceBindingName,
 			},
 		},

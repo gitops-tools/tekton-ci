@@ -17,6 +17,7 @@ var (
 		APIVersion: "v1",
 	}
 
+	// SimpleVolumeMode is the default PersistentVolumeMode.
 	SimpleVolumeMode = corev1.PersistentVolumeFilesystem
 )
 

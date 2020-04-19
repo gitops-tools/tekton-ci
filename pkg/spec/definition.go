@@ -9,11 +9,18 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// ParamBinding represents a name and CEL expression that's used when generating
+// a PipelineRun from the spec.
+//
+// These are converted to Params, and added to the list of params already
+// provided by the PipelineRunSpec.
 type ParamBinding struct {
 	Name       string `yaml:"name"`
 	Expression string `yaml:"expression"`
 }
 
+// PipelineDefinition represents the YAML that defines a PipelineRun when
+// handing events.
 type PipelineDefinition struct {
 	Filter          string                     `yaml:"expression"`
 	ParamBindings   []ParamBinding             `yaml:"param_bindings"`

@@ -20,7 +20,7 @@ func TestParse(t *testing.T) {
 			AfterScript: []string{`echo "testing"`},
 			Stages:      []string{"test"},
 			Tasks: []*Task{
-				&Task{Name: "format",
+				{Name: "format",
 					Stage:  "test",
 					Script: []string{`echo "testing"`},
 				},
@@ -30,7 +30,7 @@ func TestParse(t *testing.T) {
 			Image:  "golang:latest",
 			Stages: []string{DefaultStage},
 			Tasks: []*Task{
-				&Task{Name: "format",
+				{Name: "format",
 					Stage:  DefaultStage,
 					Script: []string{`echo "testing"`},
 				},
@@ -40,15 +40,15 @@ func TestParse(t *testing.T) {
 			Image:  "golang:latest",
 			Stages: []string{DefaultStage},
 			Tasks: []*Task{
-				&Task{Name: "format",
+				{Name: "format",
 					Stage:  DefaultStage,
 					Script: []string{`echo "testing"`},
 					Rules: []Rule{
-						Rule{
+						{
 							If:   `vars.CI_COMMIT_BRANCH != "master"`,
 							When: "never",
 						},
-						Rule{
+						{
 							If:   `hook.Forced == true`,
 							When: "manual",
 						},
@@ -63,12 +63,12 @@ func TestParse(t *testing.T) {
 				ServiceAccountName: "testing",
 			},
 			Tasks: []*Task{
-				&Task{Name: "format",
+				{Name: "format",
 					Stage: DefaultStage,
 					Tekton: &TektonTask{
 						TaskRef: "my-test-task",
 						Params: []TektonTaskParam{
-							TektonTaskParam{
+							{
 								Name:       "IMAGE_URL",
 								Expression: "quay.io/testing/testing",
 							},

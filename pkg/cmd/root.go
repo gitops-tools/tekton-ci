@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
@@ -29,17 +30,20 @@ func makeRootCmd() *cobra.Command {
 		Short: "Generate a TektonCD PipelineRun from a CI pipeline description",
 		Run: func(cmd *cobra.Command, args []string) {
 			f, err := os.Open(viper.GetString("pipeline-file"))
-			if err != nil {
-				log.Fatal(err)
-			}
+			logIfError(err)
 			defer f.Close()
 
 			parsed, err := ci.Parse(f)
-			if err != nil {
-				log.Fatal(err)
-			}
+			logIfError(err)
 			source := &dsl.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
-			converted, err := dsl.Convert(parsed, newDSLConfig(), source, "shared-task-storage", nil)
+
+			logger, _ := zap.NewProduction()
+			defer func() {
+				logIfError(logger.Sync()) // flushes buffer, if any
+			}()
+			sugar := logger.Sugar()
+
+			converted, err := dsl.Convert(parsed, sugar, newDSLConfig(), source, "shared-task-storage", nil)
 			if err != nil {
 				log.Fatalf("error converting the script: %v", err)
 			}
@@ -81,6 +85,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 }
 
+// Execute is the main entry point into this component.
 func Execute() {
 	if err := makeRootCmd().Execute(); err != nil {
 		log.Fatal(err)

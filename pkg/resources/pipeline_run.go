@@ -6,6 +6,8 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
+// PipelineRun creates a PipelineRun with the name, standard labels, and the
+// provided Spec.
 func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec) *pipelinev1.PipelineRun {
 	return &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},

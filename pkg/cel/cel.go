@@ -34,12 +34,13 @@ func New(hook scm.Webhook) (*Context, error) {
 	}, nil
 }
 
-// Evaluate evaluates the provided expression and returns the results of doing
-// so.
+// Evaluate evaluates the provided expression and returns the result.
 func (c *Context) Evaluate(expr string) (ref.Val, error) {
 	return evaluate(expr, c.env, c.Data)
 }
 
+// EvaluateToString evaluates the provided expression, and marshals it to a string
+// before returning.
 func (c *Context) EvaluateToString(expr string) (string, error) {
 	res, err := c.Evaluate(expr)
 	if err != nil {

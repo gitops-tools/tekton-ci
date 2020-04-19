@@ -10,6 +10,8 @@ import (
 	"github.com/bigkevmcd/tekton-ci/test"
 )
 
+// MakeHookFromFixture creates and returns a WebHook parsed from the provided
+// fixture file, with the correct X-GitHub-Event type etc.
 func MakeHookFromFixture(t *testing.T, filename, eventType string) scm.Webhook {
 	t.Helper()
 	req := test.MakeHookRequest(t, filename, eventType)

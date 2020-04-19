@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 )
@@ -77,9 +79,10 @@ func TestTaskOrdering(t *testing.T) {
 
 	for _, tt := range orderingTests {
 		t.Run(tt.name, func(rt *testing.T) {
+			logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 			p := makeOrderingPipeline(tt.before, tt.after, tt.stages, tt.tasks)
 			src := &Source{RepoURL: testRepoURL, Ref: "master"}
-			pr, err := Convert(p, testConfiguration(), src, "test-volume", nil)
+			pr, err := Convert(p, logger.Sugar(), testConfiguration(), src, "test-volume", nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -10,13 +10,13 @@ import (
 
 type fixtureFunc func(map[string]interface{})
 
-// TODO use uuid to generate the Delivery ID.
 // MakeHookRequest creates and returns a new http.Request that resembles a
 // GitHub hook request, including the correct event type and reading and sending
 // a fixture as a JSON body.
 //
 // Optionally changes can be applied to the fixture that is read, before it's
 // sent.
+// TODO use uuid to generate the Delivery ID.
 func MakeHookRequest(t *testing.T, fixture, eventType string, changes ...fixtureFunc) *http.Request {
 	body := ReadJSONFixture(t, fixture)
 	for _, c := range changes {

@@ -50,7 +50,12 @@ func makeHTTPCmd() *cobra.Command {
 			}
 
 			logger, _ := zap.NewProduction()
-			defer logger.Sync() // flushes buffer, if any
+			defer func() {
+				err := logger.Sync() // flushes buffer, if any
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
 			sugar := logger.Sugar()
 
 			namespace := viper.GetString("namespace")
