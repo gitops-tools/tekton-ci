@@ -1,4 +1,6 @@
-# pipeline-runner for TektonCD
+# pipeline-runner for TektonCD 
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/bigkevmcd/tekton-ci)](https://goreportcard.com/report/github.com/bigkevmcd/tekton-ci)
 
 This is a very early, pre-Alpha release of this code.
 

@@ -1,0 +1,12 @@
+version = 1
+
+[[analyzers]]
+name = "go"
+enabled = true
+
+  [analyzers.meta]
+  import_path = "github.com/bigkevmcd/tekton-ci"
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true
