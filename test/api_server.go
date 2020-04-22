@@ -25,6 +25,9 @@ func MakeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server 
 		if err != nil {
 			t.Fatalf("failed to read %s: %s", fixture, err)
 		}
-		w.Write(b)
+		_, err = w.Write(b)
+		if err != nil {
+			t.Fatalf("failed to write out the body: %s", err)
+		}
 	}))
 }

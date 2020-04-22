@@ -56,9 +56,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch evt := hook.(type) {
-	case *scm.PushHook:
-		h.push(r.Context(), evt, w)
+	if hook.Kind() == scm.WebhookKindPush {
+		h.push(r.Context(), hook.(*scm.PushHook), w)
 	}
 }
 

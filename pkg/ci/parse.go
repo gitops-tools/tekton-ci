@@ -87,8 +87,7 @@ func stringSlice(vars interface{}) []string {
 func parseTektonConfig(v interface{}) *TektonConfig {
 	t := &TektonConfig{}
 	for k, v := range v.(map[string]interface{}) {
-		switch k {
-		case "serviceAccountName":
+		if k == "serviceAccountName" {
 			t.ServiceAccountName = v.(string)
 		}
 	}
@@ -130,8 +129,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 func parseArtifacts(v interface{}) Artifacts {
 	a := Artifacts{Paths: []string{}}
 	for k, v := range v.(map[string]interface{}) {
-		switch k {
-		case "paths":
+		if k == "paths" {
 			a.Paths = stringSlice(v)
 		}
 	}
