@@ -15,6 +15,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
+	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
@@ -33,17 +34,19 @@ type Handler struct {
 	namespace      string
 	volumeCreator  volumes.Creator
 	config         *Configuration
+	metrics        *metrics.PrometheusMetrics
 }
 
 // New creates and returns a new Handler for converting ci.Pipelines into
 // PipelineRuns.
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, cfg *Configuration, namespace string, l logger.Logger) *Handler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, m *metrics.PrometheusMetrics, cfg *Configuration, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
 		volumeCreator:  volumeCreator,
 		log:            l,
 		config:         cfg,
+		metrics:        m,
 		namespace:      namespace,
 	}
 }
@@ -63,6 +66,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // TODO: detect deleted events and don't execute.
 func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
+	h.metrics.CountHook(evt)
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing push event", "repo", repo, "sha", evt.Commit.Sha)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Commit.Sha)

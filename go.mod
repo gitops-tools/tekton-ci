@@ -6,6 +6,7 @@ require (
 	github.com/google/cel-go v0.4.1
 	github.com/google/go-cmp v0.4.0
 	github.com/jenkins-x/go-scm v1.5.84
+	github.com/prometheus/client_golang v1.1.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	github.com/tektoncd/pipeline v0.11.0

@@ -12,10 +12,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
 	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
@@ -63,6 +65,7 @@ func makeHTTPCmd() *cobra.Command {
 				git.New(scmClient),
 				tektonClient,
 				volumes.New(coreClient),
+				metrics.New(nil),
 				newDSLConfig(),
 				namespace,
 				sugar)
@@ -73,6 +76,7 @@ func makeHTTPCmd() *cobra.Command {
 				sugar)
 			http.Handle("/pipeline", dslHandler)
 			http.Handle("/pipelinerun", specHandler)
+			http.Handle("/metrics", promhttp.Handler())
 			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
 			log.Fatal(http.ListenAndServe(listen, nil))
 		},

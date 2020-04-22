@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/prometheus/client_golang/prometheus"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
@@ -36,7 +38,7 @@ func TestHandlePushEvent(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), testConfiguration(), testNS, logger.Sugar())
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -104,7 +106,7 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), testConfiguration(), testNS, logger.Sugar())
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
