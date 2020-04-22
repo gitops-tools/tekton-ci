@@ -77,6 +77,22 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/simple-with-jobs.yaml", &Pipeline{
+			Image:  "golang:latest",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				{Name: "format",
+					Stage: DefaultStage,
+					Tekton: &TektonTask{
+						Jobs: []map[string]string{
+							{"CI_NODE_INDEX": "0"},
+							{"CI_NODE_INDEX": "1"},
+						},
+					},
+					Script: []string{`echo "testing"`},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {
@@ -105,8 +121,9 @@ func TestParseBadFiles(t *testing.T) {
 		errMsg   string
 	}{
 		{"testdata/bad-task-no-script.yaml", `invalid task "format": missing script`},
-		{"testdata/bad-tekton-task.yaml", `invalid task "format": provided Tekton task and Script`},
+		{"testdata/bad-tekton-task.yaml", `invalid task "format": provided Tekton taskRef and script`},
 		{"testdata/bad-tekton-task-params.yaml", `bad Tekton task parameter`},
+		{"testdata/bad-tekton-jobs.yaml", `could not parse CI_NODE_INDEX==0 as an environment variable`},
 	}
 
 	for _, tt := range parseTests {

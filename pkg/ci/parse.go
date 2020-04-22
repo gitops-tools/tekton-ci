@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"sigs.k8s.io/yaml"
 )
@@ -103,7 +104,7 @@ func parseTask(name string, v interface{}) (*Task, error) {
 		case "script":
 			t.Script = stringSlice(v)
 		case "tekton":
-			tekton, err := parseTekton(v)
+			tekton, err := parseTektonTask(v)
 			if err != nil {
 				return nil, err
 			}
@@ -117,8 +118,8 @@ func parseTask(name string, v interface{}) (*Task, error) {
 	if len(t.Script) == 0 && t.Tekton == nil {
 		return nil, fmt.Errorf("invalid task %#v: missing script", name)
 	}
-	if len(t.Script) > 0 && t.Tekton != nil {
-		return nil, fmt.Errorf("invalid task %#v: provided Tekton task and Script", name)
+	if len(t.Script) > 0 && t.Tekton != nil && t.Tekton.TaskRef != "" {
+		return nil, fmt.Errorf("invalid task %#v: provided Tekton taskRef and script", name)
 	}
 	if t.Stage == "" {
 		t.Stage = DefaultStage
@@ -137,10 +138,16 @@ func parseArtifacts(v interface{}) Artifacts {
 	return a
 }
 
-func parseTekton(v interface{}) (*TektonTask, error) {
+func parseTektonTask(v interface{}) (*TektonTask, error) {
 	t := &TektonTask{}
 	for k, v := range v.(map[string]interface{}) {
 		switch k {
+		case "jobs":
+			jobs, err := parseTektonTaskJobs(v)
+			if err != nil {
+				return nil, err
+			}
+			t.Jobs = jobs
 		case "taskRef":
 			t.TaskRef = v.(string)
 		case "params":
@@ -189,9 +196,9 @@ func findStages(tasks []*Task) []string {
 // TODO: this should validate params.
 func parseTektonTaskParams(v interface{}) ([]TektonTaskParam, error) {
 	params := []TektonTaskParam{}
-	for _, rule := range v.([]interface{}) {
+	for _, p := range v.([]interface{}) {
 		param := TektonTaskParam{}
-		for k, v := range rule.(map[string]interface{}) {
+		for k, v := range p.(map[string]interface{}) {
 			switch k {
 			case "name":
 				param.Name = v.(string)
@@ -205,4 +212,17 @@ func parseTektonTaskParams(v interface{}) ([]TektonTaskParam, error) {
 		params = append(params, param)
 	}
 	return params, nil
+}
+
+func parseTektonTaskJobs(v interface{}) ([]map[string]string, error) {
+	jobs := []map[string]string{}
+	for _, j := range v.([]interface{}) {
+		// TODO: these should be using , ok syntax and better errors.
+		parts := strings.Split(j.(string), "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("could not parse %s as an environment variable", j.(string))
+		}
+		jobs = append(jobs, map[string]string{parts[0]: parts[1]})
+	}
+	return jobs, nil
 }
