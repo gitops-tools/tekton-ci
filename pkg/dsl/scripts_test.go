@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
@@ -378,6 +379,105 @@ func TestConvertWithTektonTask(t *testing.T) {
 	}
 }
 
+func TestConvertWithJobMatrix(t *testing.T) {
+	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
+	p := &ci.Pipeline{
+		Image:     "golang:latest",
+		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
+		Stages: []string{
+			"test",
+		},
+		AfterScript: []string{
+			"echo after script",
+		},
+		Tasks: []*ci.Task{
+			{
+				Name:  "format",
+				Stage: "test",
+				Script: []string{
+					"go test -race $(go list ./... | grep -v /vendor/)",
+				},
+				Tekton: &ci.TektonTask{
+					Jobs: []map[string]string{
+						{"CI_NODE_INDEX": "0"},
+						{"CI_NODE_INDEX": "1"},
+					},
+				},
+			},
+		},
+	}
+	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
+	ctx, err := cel.New(hook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testEnv := makeEnv(p.Variables)
+	// TODO flatten this test
+	want := &pipelinev1.PipelineSpec{
+		Tasks: []pipelinev1.PipelineTask{
+			makeGitCloneTask(testEnv, source),
+			{
+				Name: "format-stage-test-0",
+				TaskSpec: &pipelinev1.TaskSpec{
+					Steps: []pipelinev1.Step{
+						{
+							Container: corev1.Container{
+								Image:      "golang:latest",
+								Command:    []string{"sh"},
+								Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
+								WorkingDir: "$(workspaces.source.path)",
+								Env: []v1.EnvVar{
+									{Name: "REPO_NAME", Value: "github.com/bigkevmcd/github-tool"},
+									{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
+									{Name: "CI_NODE_INDEX", Value: "0"},
+								},
+							},
+						},
+					},
+					Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
+				},
+				RunAfter:   []string{"git-clone"},
+				Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+			},
+			{
+				Name: "format-stage-test-1",
+				TaskSpec: &pipelinev1.TaskSpec{
+					Steps: []pipelinev1.Step{
+						{
+							Container: corev1.Container{
+								Image:      "golang:latest",
+								Command:    []string{"sh"},
+								Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
+								WorkingDir: "$(workspaces.source.path)",
+								Env: []v1.EnvVar{
+									{Name: "REPO_NAME", Value: "github.com/bigkevmcd/github-tool"},
+									{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
+									{Name: "CI_NODE_INDEX", Value: "1"},
+								},
+							},
+						},
+					},
+					Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
+				},
+				RunAfter:   []string{"git-clone"},
+				Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
+			},
+			makeScriptTask("after-step", []string{"format-stage-test-0", "format-stage-test-1"}, testEnv, "golang:latest", []string{"echo after script"}),
+		},
+		Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
+	}
+
+	if diff := cmp.Diff(want, pr.Spec.PipelineSpec); diff != "" {
+		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
+	}
+}
+
 func TestContainer(t *testing.T) {
 	env := []corev1.EnvVar{{Name: "TEST_DIR", Value: "/tmp/test"}}
 	got := container("test-name", "test-image", "run", []string{"this"}, env, "/tmp/dir")
@@ -407,6 +507,47 @@ func TestMakeEnv(t *testing.T) {
 	if diff := cmp.Diff(want, env); diff != "" {
 		t.Fatalf("env doesn't match:\n%s", diff)
 	}
+}
+
+func TestMakeTaskEnvMatrix(t *testing.T) {
+	root := []corev1.EnvVar{
+		{Name: "TEST_KEY", Value: "test_val"},
+		{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
+	}
+
+	varTests := []struct {
+		jobs []map[string]string
+		want [][]corev1.EnvVar
+	}{
+		{
+			nil,
+			[][]corev1.EnvVar{root},
+		},
+		{
+			[]map[string]string{{"TESTING": "test1"}},
+			[][]corev1.EnvVar{append(root, corev1.EnvVar{Name: "TESTING", Value: "test1"})},
+		},
+		{
+			[]map[string]string{{"TESTING": "test1"}, {"TESTING": "test2"}},
+			[][]corev1.EnvVar{
+				append(root, corev1.EnvVar{Name: "TESTING", Value: "test1"}),
+				append(root, corev1.EnvVar{Name: "TESTING", Value: "test2"}),
+			},
+		},
+	}
+	for _, tt := range varTests {
+		task := &ci.Task{
+			Name: "format",
+			Tekton: &ci.TektonTask{
+				Jobs: tt.jobs,
+			},
+		}
+
+		got := makeTaskEnvMatrix(root, task)
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Fatalf("EnvVars don't match:\n%s", diff)
+		}
+	}
 
 }
 
@@ -421,4 +562,15 @@ func testConfiguration() *Configuration {
 		ArchiveURL:                testArchiveURL,
 		DefaultServiceAccountName: testServiceAccountName,
 	}
+}
+
+func mergeStringMap(src, dst map[string]string) map[string]string {
+	newMap := map[string]string{}
+	for k, v := range dst {
+		newMap[k] = v
+	}
+	for k, v := range src {
+		newMap[k] = v
+	}
+	return newMap
 }

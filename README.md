@@ -113,6 +113,19 @@ test:
 tekton-task
   stage: test
   tekton:
+    # These are used to create a job matrix, this task will be executed for each
+    # option, and the options are split into env-vars, and placed into a task's
+    # environment.
+    #
+    # All the tasks in the matrix are executed in parallel.
+    #
+    # This can be used to parallelise tests, for example, you can execute your
+    # test-runner, and detect the value of the "TESTS_TO_RUN" env-var, and
+    # execute accordingly.
+    jobs:
+      - TESTS_TO_RUN=integration
+      - TESTS_TO_RUN=unit
+      - TESTS_TO_RUN=e2e
     taskRef: my-test-task
     # Params here are processed as CEL expressions and passed to the Task.
     params:
@@ -185,6 +198,7 @@ $ go test -v ./...
 
 In no particular order.
 
+ * Support for secrets to validate incoming Webhooks.
  * Support private Git repositories.
  * Metrics.
  * Watch for ending runs and delete the volume mount.
@@ -198,8 +212,8 @@ In no particular order.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
- * Support for secrets to validate incoming Webhooks.
  * Configurability of volume creation.
+ * ~~Support for parallelism via build matrices.~~
  * ~~Allow passing params from the Tekton task mechanism through to the Task.~~
  * ~~Provide support for calling other Tekton tasks from the script DSL.~~
  * ~~Filtering of the events (only pushes to "master" for example).~~

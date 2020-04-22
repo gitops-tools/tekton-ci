@@ -1,6 +1,8 @@
 package dsl
 
 import (
+	"fmt"
+
 	"github.com/google/cel-go/common/types"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -42,24 +44,30 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 		tasks = append(tasks, makeScriptTask(beforeStepTaskName, previous, env, p.Image, p.BeforeScript))
 		previous = []string{beforeStepTaskName}
 	}
-	for _, name := range p.Stages {
-		log.Infow("processing stage", "stage", name)
+	for _, stageName := range p.Stages {
+		log.Infow("processing stage", "stage", stageName)
 		stageTasks := []string{}
-		for _, taskName := range p.TasksForStage(name) {
+		for _, taskName := range p.TasksForStage(stageName) {
 			task := p.Task(taskName)
 			log.Infow("processing task", "task", taskName)
-			stageTask, err := makeTaskForStage(task, name, previous, env, p.Image, ctx)
-			if err != nil {
-				return nil, err
-			}
-			if stageTask != nil {
-				tasks = append(tasks, *stageTask)
-				if len(task.Artifacts.Paths) > 0 {
-					archiverTask := makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, config, task.Artifacts.Paths)
-					tasks = append(tasks, archiverTask)
-					stageTask = &archiverTask
+			taskMatrix := makeTaskEnvMatrix(env, task)
+			for i, m := range taskMatrix {
+				stageTask, err := makeTaskForStage(task, stageName, previous, m, p.Image, ctx)
+				if err != nil {
+					return nil, err
 				}
-				stageTasks = append(stageTasks, stageTask.Name)
+				if stageTask != nil {
+					if len(taskMatrix) > 1 {
+						stageTask.Name = fmt.Sprintf("%s-%d", stageTask.Name, i)
+					}
+					tasks = append(tasks, *stageTask)
+					if len(task.Artifacts.Paths) > 0 {
+						archiverTask := makeArchiveArtifactsTask(previous, task.Name+"-archiver", env, config, task.Artifacts.Paths)
+						tasks = append(tasks, archiverTask)
+						stageTask = &archiverTask
+					}
+					stageTasks = append(stageTasks, stageTask.Name)
+				}
 			}
 		}
 		previous = stageTasks
@@ -111,7 +119,7 @@ func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   runAfter,
 	}
-	if job.Tekton != nil {
+	if job.Tekton != nil && job.Tekton.TaskRef != "" {
 		pt.TaskRef = &pipelinev1.TaskRef{
 			Name: job.Tekton.TaskRef,
 			Kind: "Task",
@@ -221,6 +229,7 @@ func container(name, image string, command string, args []string, env []corev1.E
 	return c
 }
 
+// Returns true if any of the rule results for a Task has a "never".
 func hasNever(whens []string) bool {
 	for _, v := range whens {
 		if v == "never" {
@@ -230,6 +239,10 @@ func hasNever(whens []string) bool {
 	return false
 }
 
+// This converts the CI TaskParam model to a Tekton Pipeline Param.
+//
+// It evaluates the values as CEL expressions, and places the resulting value
+// into the Param.
 func paramsToParams(ctx *cel.Context, ciParams []ci.TektonTaskParam) ([]pipelinev1.Param, error) {
 	params := []pipelinev1.Param{}
 	for _, c := range ciParams {
@@ -240,4 +253,26 @@ func paramsToParams(ctx *cel.Context, ciParams []ci.TektonTaskParam) ([]pipeline
 		params = append(params, pipelinev1.Param{Name: c.Name, Value: pipelinev1.ArrayOrString{StringVal: v, Type: "string"}})
 	}
 	return params, nil
+}
+
+// This takes a slice of EnvVars, and returns a new slice of slices of EnvVars.
+//
+// Each slice in the new slice, will include the root EnvVars, plus a var from
+// the task's TektonJobs.
+//
+// If Task has no Jobs, then the return is just a slice with the root EnvVars.
+func makeTaskEnvMatrix(root []corev1.EnvVar, task *ci.Task) [][]corev1.EnvVar {
+	if task.Tekton == nil || len(task.Tekton.Jobs) == 0 {
+		return [][]corev1.EnvVar{root}
+	}
+	result := [][]corev1.EnvVar{}
+	for _, job := range task.Tekton.Jobs {
+		envVars := []corev1.EnvVar{}
+		envVars = append(envVars, root...)
+		for k, v := range job {
+			envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
+		}
+		result = append(result, envVars)
+	}
+	return result
 }
