@@ -10,7 +10,7 @@ import (
 // provided Spec.
 func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec) *pipelinev1.PipelineRun {
 	return &pipelinev1.PipelineRun{
-		TypeMeta: metav1.TypeMeta{APIVersion: "pipeline.tekton.dev/v1beta1", Kind: "PipelineRun"},
+		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: prName,
 			Annotations:  annotations(),
