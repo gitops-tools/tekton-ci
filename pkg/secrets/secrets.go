@@ -9,8 +9,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// DefaultName is the name that is used for comparing GitHub hooks.
 const DefaultName = "tekton-ci-hook-secrets"
 
+// KubeSecretGetter is an implementation of SecretGetter.
 type KubeSecretGetter struct {
 	coreClient kubernetes.Interface
 	name       string
@@ -27,6 +29,8 @@ func New(ns, n string, c kubernetes.Interface) *KubeSecretGetter {
 	}
 }
 
+// Secret finds the secret to use to match against for the repo associated with
+// the provided hook, or returns an error.
 func (k KubeSecretGetter) Secret(hook scm.Webhook) (string, error) {
 	secret, err := k.coreClient.CoreV1().Secrets(k.namespace).Get(k.name, metav1.GetOptions{})
 	if err != nil {

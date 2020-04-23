@@ -31,7 +31,10 @@ func MakeHookRequest(t *testing.T, fixture, eventType string, changes ...fixture
 
 	serialisedBody := serialiseToJSON(t, body)
 	mac := hmac.New(sha1.New, []byte(secret))
-	mac.Write(serialisedBody.Bytes())
+	_, err := mac.Write(serialisedBody.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
 	sig := hex.EncodeToString(mac.Sum(nil))
 	req := httptest.NewRequest("POST", "/", serialisedBody)
 	req.Header.Add("X-GitHub-Delivery", "72d3162e-cc78-11e3-81ab-4c9367dc0958")

@@ -56,6 +56,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.log.Errorf("error parsing webhook: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.metrics.CountInvalidHook()
 		return
 	}
 
