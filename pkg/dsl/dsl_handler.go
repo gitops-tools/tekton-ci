@@ -59,6 +59,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.metrics.CountHook(hook)
+
 	if hook.Kind() == scm.WebhookKindPush {
 		h.push(r.Context(), hook.(*scm.PushHook), w)
 	}
@@ -66,7 +68,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // TODO: detect deleted events and don't execute.
 func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
-	h.metrics.CountHook(evt)
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
 	h.log.Infow("processing push event", "repo", repo, "sha", evt.Commit.Sha)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Commit.Sha)

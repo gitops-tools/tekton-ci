@@ -1,0 +1,19 @@
+image: golang:latest
+
+variables:
+  REPO_NAME: github.com/bigkevmcd/github-tool
+
+stages:
+  - test
+
+after_script:
+  - echo after script
+
+format:
+  stage: test
+  script:
+    - "go test -race $(go list ./... | grep -v /vendor/)"
+  tekton:
+    jobs:
+      - CI_NODE_INDEX=0
+      - CI_NODE_INDEX=1

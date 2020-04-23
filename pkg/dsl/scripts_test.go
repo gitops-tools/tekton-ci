@@ -1,13 +1,16 @@
 package dsl
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
@@ -244,238 +247,36 @@ func TestConvert(t *testing.T) {
 	}
 }
 
-func TestConvertWithRules(t *testing.T) {
-	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
-	p := &ci.Pipeline{
-		Image:     "golang:latest",
-		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
-		Stages: []string{
-			"test",
-		},
-		Tasks: []*ci.Task{
-			{
-				Name:  "format",
-				Stage: "test",
-				Script: []string{
-					"go test -race $(go list ./... | grep -v /vendor/)",
-				},
-				Rules: []ci.Rule{
-					{
-						If:   `hook.PullRequest.Head.Ref != "master"`,
-						When: "never",
-					},
-				},
-			},
-		},
-	}
-	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
-	ctx, err := cel.New(hook)
-	if err != nil {
-		t.Fatal(err)
-	}
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
-	if err != nil {
-		t.Fatal(err)
+func TestConvertFixtures(t *testing.T) {
+	convertTests := []struct {
+		name string
+	}{
+		{"script_with_rules"},
+		{"pipeline_with_tekton_task"},
+		{"script_with_job_matrix"},
 	}
 
-	testEnv := makeEnv(p.Variables)
-	// TODO flatten this test
-	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
-		ServiceAccountName: testServiceAccountName,
-		Workspaces: []pipelinev1.WorkspaceBinding{
-			{
-				Name: "git-checkout",
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: "my-volume-claim-123",
-				},
-			},
-		},
-		PipelineSpec: &pipelinev1.PipelineSpec{
-			Tasks: []pipelinev1.PipelineTask{
-				makeGitCloneTask(testEnv, source),
-			},
-			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
-		},
-	})
-
-	if diff := cmp.Diff(want, pr); diff != "" {
-		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
-	}
-}
-
-func TestConvertWithTektonTask(t *testing.T) {
-	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
-	p := &ci.Pipeline{
-		Image:     "golang:latest",
-		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
-		Stages: []string{
-			"test",
-		},
-		TektonConfig: &ci.TektonConfig{
-			ServiceAccountName: "testing",
-		},
-		Tasks: []*ci.Task{
-			{
-				Name:  "format",
-				Stage: "test",
-				Tekton: &ci.TektonTask{
-					TaskRef: "my-test-task",
-					Params: []ci.TektonTaskParam{
-						{Name: "MY_TEST_PARAM", Expression: "vars.CI_COMMIT_BRANCH"},
-					},
-				},
-			},
-		},
-	}
-	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
-	ctx, err := cel.New(hook)
-	if err != nil {
-		t.Fatal(err)
-	}
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
-	if err != nil {
-		t.Fatal(err)
+	for _, tt := range convertTests {
+		t.Run(tt.name, func(rt *testing.T) {
+			source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
+			p := readPipelineFixture(t, fmt.Sprintf("testdata/%s.yaml", tt.name))
+			hook := hook.MakeHookFromFixture(rt, "../testdata/github_push.json", "push")
+			ctx, err := cel.New(hook)
+			if err != nil {
+				t.Fatal(err)
+			}
+			logger := zaptest.NewLogger(rt, zaptest.Level(zap.WarnLevel))
+			pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := readPipelineRunFixture(rt, fmt.Sprintf("testdata/%s_pipeline_run.yaml", tt.name))
+			if diff := cmp.Diff(want, pr); diff != "" {
+				t.Errorf("PipelineRun doesn't match:\n%s", diff)
+			}
+		})
 	}
 
-	testEnv := makeEnv(p.Variables)
-	// TODO flatten this test
-	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
-		ServiceAccountName: "testing",
-		Workspaces: []pipelinev1.WorkspaceBinding{
-			{
-				Name: "git-checkout",
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: "my-volume-claim-123",
-				},
-			},
-		},
-		PipelineSpec: &pipelinev1.PipelineSpec{
-			Tasks: []pipelinev1.PipelineTask{
-				makeGitCloneTask(testEnv, source),
-				{
-					Name: "format-stage-test",
-					TaskRef: &pipelinev1.TaskRef{
-						Name: "my-test-task",
-						Kind: "Task",
-					},
-					Params: []pipelinev1.Param{
-						{
-							Name:  "MY_TEST_PARAM",
-							Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "changes"},
-						},
-					},
-					RunAfter:   []string{"git-clone"},
-					Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-				},
-			},
-			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
-		},
-	})
-
-	if diff := cmp.Diff(want, pr); diff != "" {
-		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
-	}
-}
-
-func TestConvertWithJobMatrix(t *testing.T) {
-	source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
-	p := &ci.Pipeline{
-		Image:     "golang:latest",
-		Variables: map[string]string{"REPO_NAME": "github.com/bigkevmcd/github-tool"},
-		Stages: []string{
-			"test",
-		},
-		AfterScript: []string{
-			"echo after script",
-		},
-		Tasks: []*ci.Task{
-			{
-				Name:  "format",
-				Stage: "test",
-				Script: []string{
-					"go test -race $(go list ./... | grep -v /vendor/)",
-				},
-				Tekton: &ci.TektonTask{
-					Jobs: []map[string]string{
-						{"CI_NODE_INDEX": "0"},
-						{"CI_NODE_INDEX": "1"},
-					},
-				},
-			},
-		},
-	}
-	hook := hook.MakeHookFromFixture(t, "../testdata/github_pull_request.json", "pull_request")
-	ctx, err := cel.New(hook)
-	if err != nil {
-		t.Fatal(err)
-	}
-	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testEnv := makeEnv(p.Variables)
-	// TODO flatten this test
-	want := &pipelinev1.PipelineSpec{
-		Tasks: []pipelinev1.PipelineTask{
-			makeGitCloneTask(testEnv, source),
-			{
-				Name: "format-stage-test-0",
-				TaskSpec: &pipelinev1.TaskSpec{
-					Steps: []pipelinev1.Step{
-						{
-							Container: corev1.Container{
-								Image:      "golang:latest",
-								Command:    []string{"sh"},
-								Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
-								WorkingDir: "$(workspaces.source.path)",
-								Env: []v1.EnvVar{
-									{Name: "REPO_NAME", Value: "github.com/bigkevmcd/github-tool"},
-									{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
-									{Name: "CI_NODE_INDEX", Value: "0"},
-								},
-							},
-						},
-					},
-					Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
-				},
-				RunAfter:   []string{"git-clone"},
-				Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-			},
-			{
-				Name: "format-stage-test-1",
-				TaskSpec: &pipelinev1.TaskSpec{
-					Steps: []pipelinev1.Step{
-						{
-							Container: corev1.Container{
-								Image:      "golang:latest",
-								Command:    []string{"sh"},
-								Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
-								WorkingDir: "$(workspaces.source.path)",
-								Env: []v1.EnvVar{
-									{Name: "REPO_NAME", Value: "github.com/bigkevmcd/github-tool"},
-									{Name: "CI_PROJECT_DIR", Value: "$(workspaces.source.path)"},
-									{Name: "CI_NODE_INDEX", Value: "1"},
-								},
-							},
-						},
-					},
-					Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
-				},
-				RunAfter:   []string{"git-clone"},
-				Workspaces: []pipelinev1.WorkspacePipelineTaskBinding{{Name: "source", Workspace: "git-checkout"}},
-			},
-			makeScriptTask("after-step", []string{"format-stage-test-0", "format-stage-test-1"}, testEnv, "golang:latest", []string{"echo after script"}),
-		},
-		Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
-	}
-
-	if diff := cmp.Diff(want, pr.Spec.PipelineSpec); diff != "" {
-		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
-	}
 }
 
 func TestContainer(t *testing.T) {
@@ -548,7 +349,10 @@ func TestMakeTaskEnvMatrix(t *testing.T) {
 			t.Fatalf("EnvVars don't match:\n%s", diff)
 		}
 	}
+}
 
+func TestParamsToParams(t *testing.T) {
+	t.Skip()
 }
 
 func TestMakeScriptSteps(t *testing.T) {
@@ -573,4 +377,32 @@ func mergeStringMap(src, dst map[string]string) map[string]string {
 		newMap[k] = v
 	}
 	return newMap
+}
+
+func readPipelineFixture(t *testing.T, filename string) *ci.Pipeline {
+	t.Helper()
+	f, err := os.Open(filename)
+	if err != nil {
+		t.Fatalf("failed to open %s: %s", filename, err)
+	}
+	defer f.Close()
+	p, err := ci.Parse(f)
+	if err != nil {
+		t.Fatalf("failed to parse %s: %s", filename, err)
+	}
+	return p
+}
+
+func readPipelineRunFixture(t *testing.T, filename string) *pipelinev1.PipelineRun {
+	t.Helper()
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("failed to read %s: %s", filename, err)
+	}
+	var pr pipelinev1.PipelineRun
+	err = yaml.Unmarshal(b, &pr)
+	if err != nil {
+		t.Fatalf("failed to unmarshal %s: %s", filename, err)
+	}
+	return &pr
 }

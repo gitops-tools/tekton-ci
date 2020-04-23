@@ -1,0 +1,14 @@
+image: golang:latest
+variables:
+  REPO_NAME: github.com/bigkevmcd/github-tool
+
+stages:
+  - test
+
+format:
+  stage: test
+  script:
+    - go test -race $(go list ./... | grep -v /vendor/)
+  rules:
+    - if: vars.CI_COMMIT_BRANCH != "master"
+      when: never

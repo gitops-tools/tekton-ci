@@ -41,6 +41,7 @@ func TestTaskOrdering(t *testing.T) {
 				{"after-step", "", "build-stage-default"},
 			},
 		},
+		// TODO: fix this flakey test
 		{"tasks in different stages", false, false, []string{},
 			[]testTask{{"build", "stage-a", ""}, {"test", "stage-b", ""}},
 			[]testTask{

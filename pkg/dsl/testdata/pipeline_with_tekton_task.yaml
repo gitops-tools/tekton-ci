@@ -1,0 +1,18 @@
+image: golang:latest
+
+variables:
+  REPO_NAME: github.com/bigkevmcd/github-tool
+
+tekton:
+  serviceAccountName: testing
+
+stages:
+  - test
+
+format:
+  stage: test
+  tekton:
+    taskRef: my-test-task
+    params:
+      - name: MY_TEST_PARAM
+        expr: vars.CI_COMMIT_BRANCH
