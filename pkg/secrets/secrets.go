@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,9 +33,13 @@ func (k KubeSecretGetter) Secret(hook scm.Webhook) (string, error) {
 		return "", err
 	}
 	fullName := hook.Repository().FullName
-	token, ok := secret.Data[fullName]
+	token, ok := secret.Data[fullNameToKey(fullName)]
 	if !ok {
 		return "", fmt.Errorf("no secret for repository: %s", fullName)
 	}
 	return string(token), nil
+}
+
+func fullNameToKey(s string) string {
+	return strings.ReplaceAll(s, "/", "_")
 }

@@ -65,6 +65,15 @@ point at your endpoint, you need to choose a path for your hook endpoint:
  * /pipeline - [this](#dsl-hook-handler) interprets a [GitLab CI](https://docs.gitlab.com/ee/ci/) like syntax.
  * /pipelinerun - [this](#spec-hook-handler) provides for a way to execute [Tekton Pipeline](https://github.com/tektoncd/pipeline/blob/master/docs/pipelines.md) definitions.
 
+You will also need to create a Secret with a shared secret from your GitHub hook.
+
+```shell
+$ kubectl create secret generic tekton-ci-hook-secrets --from-literal=bigkevmcd_github-tool=test-secret
+```
+NOTE: the key in the secret is your org/repo with the `/` replaced by an `_` (underscore), `/` are not allowed in Secret keys.
+
+See https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually here for more.
+
 ## DSL Hook Handler
 
 Once you have a hook pointing at the correct path (/pipeline) then  create a simple `.tekton_ci.yaml` in the root of your repository, following the example syntax, and it should be executed when a push hook is created.
@@ -198,7 +207,6 @@ $ go test -v ./...
 
 In no particular order.
 
- * Support for secrets to validate incoming Webhooks.
  * Support private Git repositories.
  * Metrics.
  * Watch for ending runs and delete the volume mount.
@@ -213,6 +221,8 @@ In no particular order.
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
  * Configurability of volume creation.
+ * Provide the hook ID as an "execution ID" to improve traceability.
+ * ~~Support for secrets to validate incoming Webhooks.~~
  * ~~Support for parallelism via build matrices.~~
  * ~~Allow passing params from the Tekton task mechanism through to the Task.~~
  * ~~Provide support for calling other Tekton tasks from the script DSL.~~

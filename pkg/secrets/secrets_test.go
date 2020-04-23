@@ -12,7 +12,7 @@ import (
 var _ SecretGetter = (*KubeSecretGetter)(nil)
 
 func TestSecretForKnownRepository(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset(secret.Create("Codertocat/Hello-World"))
+	fakeClient := fake.NewSimpleClientset(secret.Create("Codertocat_Hello-World"))
 	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	g := New("testing", "tekton-ci-auth", fakeClient)
 
@@ -38,7 +38,7 @@ func TestSecretWithMissingSecret(t *testing.T) {
 }
 
 func TestSecretForUnknownRepository(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset(secret.Create("my-org/hello-world"))
+	fakeClient := fake.NewSimpleClientset(secret.Create("my-org_hello-world"))
 	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	g := New("testing", "tekton-ci-auth", fakeClient)
 

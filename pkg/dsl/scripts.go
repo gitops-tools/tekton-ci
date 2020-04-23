@@ -37,7 +37,8 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
 	}
-	log.Infow("converting pipeline", "volumeClaimName", volumeClaimName, "ref", src.Ref, "repoURL", src.RepoURL)
+	logMeta := []interface{}{"volumeClaimName", volumeClaimName, "ref", src.Ref, "repoURL", src.RepoURL}
+	log.Infow("converting pipeline", logMeta...)
 	previous := []string{gitCloneTaskName}
 	if len(p.BeforeScript) > 0 {
 		log.Infow("processing before_script", "scriptLen", len(p.BeforeScript))
@@ -45,11 +46,11 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 		previous = []string{beforeStepTaskName}
 	}
 	for _, stageName := range p.Stages {
-		log.Infow("processing stage", "stage", stageName)
+		log.Infow("processing stage", append(logMeta, "stage", stageName)...)
 		stageTasks := []string{}
 		for _, taskName := range p.TasksForStage(stageName) {
 			task := p.Task(taskName)
-			log.Infow("processing task", "task", taskName)
+			log.Infow("processing task", append(logMeta, "task", taskName)...)
 			taskMatrix := makeTaskEnvMatrix(env, task)
 			for i, m := range taskMatrix {
 				stageTask, err := makeTaskForStage(task, stageName, previous, m, p.Image, ctx)

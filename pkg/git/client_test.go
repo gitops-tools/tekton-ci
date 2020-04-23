@@ -52,7 +52,7 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 }
 
 func TestParseWebhook(t *testing.T) {
-	hookSecret := secret.Create("Codertocat/Hello-World")
+	hookSecret := secret.Create("Codertocat_Hello-World")
 	fakeClient := fake.NewSimpleClientset(hookSecret)
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
 	defer as.Close()
@@ -70,7 +70,7 @@ func TestParseWebhook(t *testing.T) {
 }
 
 func TestParseWebhookWithInvalidSignature(t *testing.T) {
-	hookSecret := secret.Create("Codertocat/Hello-World")
+	hookSecret := secret.Create("Codertocat_Hello-World")
 	fakeClient := fake.NewSimpleClientset(hookSecret)
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
 	defer as.Close()
