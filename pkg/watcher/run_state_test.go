@@ -16,7 +16,7 @@ var (
 	pipelineRunName = "test-pipeline-run"
 )
 
-func TestGetPipelineRunStatus(t *testing.T) {
+func TestRunState(t *testing.T) {
 	statusTests := []struct {
 		conditionType   apis.ConditionType
 		conditionStatus corev1.ConditionStatus
@@ -28,9 +28,9 @@ func TestGetPipelineRunStatus(t *testing.T) {
 	}
 
 	for _, tt := range statusTests {
-		s := getPipelineRunState(makePipelineRunWithCondition(apis.Condition{Type: tt.conditionType, Status: tt.conditionStatus}))
+		s := runState(makePipelineRunWithCondition(apis.Condition{Type: tt.conditionType, Status: tt.conditionStatus}))
 		if s != tt.want {
-			t.Errorf("getPipelineRunState(%s) got %v, want %v", tt.conditionStatus, s, tt.want)
+			t.Errorf("runState(%s) got %v, want %v", tt.conditionStatus, s, tt.want)
 		}
 	}
 }

@@ -21,7 +21,12 @@ func WatchPipelineRuns(c pipelineclientset.Interface, ns string) {
 	for {
 		select {
 		case v := <-ch:
-			log.Printf("Received a PipelineRun %#v %s", v, runState(v.Object.(*pipelinev1.PipelineRun)))
+			pr := v.Object.(*pipelinev1.PipelineRun)
+			log.Printf("Received a PipelineRun %#v %s", pr.Status, runState(pr))
+
+			for _, tr := range pr.Status.TaskRuns {
+				log.Printf("    %#v", tr.Status)
+			}
 		}
 	}
 }
