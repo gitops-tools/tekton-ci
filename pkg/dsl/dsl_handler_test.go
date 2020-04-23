@@ -20,6 +20,7 @@ import (
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
+	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
@@ -33,7 +34,7 @@ func TestHandlePushEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient)
+	gitClient := git.New(scmClient, secrets.NewMock())
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
@@ -101,7 +102,7 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient)
+	gitClient := git.New(scmClient, secrets.NewMock())
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)

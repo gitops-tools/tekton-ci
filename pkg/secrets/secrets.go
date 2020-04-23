@@ -8,6 +8,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const DefaultName = "tekton-ci-hook-secrets"
+
 type KubeSecretGetter struct {
 	coreClient kubernetes.Interface
 	name       string
@@ -34,6 +36,5 @@ func (k KubeSecretGetter) Secret(hook scm.Webhook) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("no secret for repository: %s", fullName)
 	}
-
 	return string(token), nil
 }

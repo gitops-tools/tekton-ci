@@ -18,6 +18,7 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
+	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/pkg/spec"
 	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
@@ -61,8 +62,9 @@ func makeHTTPCmd() *cobra.Command {
 			sugar := logger.Sugar()
 
 			namespace := viper.GetString("namespace")
+			gitClient := git.New(scmClient, secrets.New(namespace, secrets.DefaultName, coreClient))
 			dslHandler := dsl.New(
-				git.New(scmClient),
+				gitClient,
 				tektonClient,
 				volumes.New(coreClient),
 				metrics.New(nil),
@@ -70,7 +72,7 @@ func makeHTTPCmd() *cobra.Command {
 				namespace,
 				sugar)
 			specHandler := spec.New(
-				git.New(scmClient),
+				gitClient,
 				tektonClient,
 				namespace,
 				sugar)

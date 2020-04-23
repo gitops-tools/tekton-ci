@@ -6,7 +6,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
 
@@ -19,8 +18,9 @@ func MakeHookFromFixture(t *testing.T, filename, eventType string) scm.Webhook {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := git.New(scmClient)
-	hook, err := client.ParseWebhookRequest(req)
+	hook, err := scmClient.Webhooks.Parse(req, func(_ scm.Webhook) (string, error) {
+		return "", nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

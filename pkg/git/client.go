@@ -5,23 +5,25 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/jenkins-x/go-scm/scm"
 )
 
 // New creates and returns a new SCMClient.
-func New(c *scm.Client) *SCMClient {
-	return &SCMClient{client: c}
+func New(c *scm.Client, s secrets.SecretGetter) *SCMClient {
+	return &SCMClient{client: c, secrets: s}
 }
 
 // SCMClient is a wrapper for the go-scm scm.Client with a simplified API.
 type SCMClient struct {
-	client *scm.Client
+	client  *scm.Client
+	secrets secrets.SecretGetter
 }
 
 // ParseWebhookRequest parses an incoming hook request and returns a parsed
 // hook response if one can be matched.
 func (c *SCMClient) ParseWebhookRequest(req *http.Request) (scm.Webhook, error) {
-	hook, err := c.client.Webhooks.Parse(req, c.Secret)
+	hook, err := c.client.Webhooks.Parse(req, c.secrets.Secret)
 	if err != nil {
 		return nil, err
 	}
@@ -42,11 +44,6 @@ func (c *SCMClient) FileContents(ctx context.Context, repo, path, ref string) ([
 		return nil, err
 	}
 	return content.Data, nil
-}
-
-// Secret returns a string that can be compared to an incoming hook secret.
-func (c *SCMClient) Secret(webhook scm.Webhook) (string, error) {
-	return "", nil
 }
 
 func isErrorStatus(i int) bool {

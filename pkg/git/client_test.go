@@ -10,8 +10,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/bigkevmcd/tekton-ci/test/secret"
 )
 
 func TestFileContents(t *testing.T) {
@@ -21,7 +24,7 @@ func TestFileContents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient)
+	client := New(scmClient, nil)
 
 	body, err := client.FileContents(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
 	if err != nil {
@@ -40,7 +43,7 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient)
+	client := New(scmClient, nil)
 
 	_, err = client.FileContents(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
 	if !IsNotFound(err) {
@@ -49,6 +52,8 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 }
 
 func TestParseWebhook(t *testing.T) {
+	hookSecret := secret.Create("Codertocat/Hello-World")
+	fakeClient := fake.NewSimpleClientset(hookSecret)
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
 	defer as.Close()
 	req := test.MakeHookRequest(t, "testdata/push_hook.json", "push")
@@ -56,12 +61,30 @@ func TestParseWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient)
+	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient))
 	hook, err := client.ParseWebhookRequest(req)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_ = hook.(*scm.PushHook)
+}
+
+func TestParseWebhookWithInvalidSignature(t *testing.T) {
+	hookSecret := secret.Create("Codertocat/Hello-World")
+	fakeClient := fake.NewSimpleClientset(hookSecret)
+	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
+	defer as.Close()
+	req := test.MakeHookRequest(t, "testdata/push_hook.json", "push")
+	req.Header.Set("X-Hub-Signature", "sha1=testing")
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient))
+	_, err = client.ParseWebhookRequest(req)
+	if err != scm.ErrSignatureInvalid {
+		t.Fatal(err)
+	}
 }
 
 func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {

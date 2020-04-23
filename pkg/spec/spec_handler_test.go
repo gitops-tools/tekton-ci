@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
+	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/test"
 )
 
@@ -28,7 +29,7 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient)
+	gitClient := git.New(scmClient, secrets.NewMock())
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
@@ -71,7 +72,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient)
+	gitClient := git.New(scmClient, secrets.NewMock())
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
@@ -97,7 +98,7 @@ func TestHandlePushEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient)
+	gitClient := git.New(scmClient, secrets.NewMock())
 	fakeKube := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	h := New(gitClient, fakeKube, testNS, logger.Sugar())
