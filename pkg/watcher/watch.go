@@ -23,10 +23,24 @@ func WatchPipelineRuns(c pipelineclientset.Interface, ns string) {
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
 			log.Printf("Received a PipelineRun %#v %s", pr.Status, runState(pr))
+			commit, err := FindCommit(pr)
+			if err != nil {
+				log.Printf("got an error finding the commit: %s", err)
+				continue
+			}
+			log.Printf("identified the commit as: %s", commit)
+		}
+	}
+}
 
-			for _, tr := range pr.Status.TaskRuns {
-				log.Printf("    %#v", tr.Status)
+func FindCommit(pr *pipelinev1.PipelineRun) (string, error) {
+	for name, tr := range pr.Status.TaskRuns {
+		for _, v := range tr.Status.ResourcesResult {
+			if v.Key == "commit" {
+				return v.Value, nil
 			}
 		}
 	}
+
+	return "", nil
 }
