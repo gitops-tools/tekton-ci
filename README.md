@@ -37,6 +37,14 @@ This requires Tekton Pipelines to be installed, at least v0.11.0
 $ kubectl apply -f https://github.com/tektoncd/pipeline/releases/download/v0.11.0/release.yaml
 ```
 
+## Private Repo access
+
+You'll need to create an access token, with `repo` scope.
+
+```shell
+$ kubectl create secret generic tekton-ci-client --from-literal=token=<access token>
+```
+
 ### Deploying the container
 
 The hook receiver needs to be deployed to Kubernetes.
@@ -217,7 +225,6 @@ $ go test -v ./...
 
 In no particular order.
 
- * Support private Git repositories.
  * Metrics.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
@@ -231,6 +238,7 @@ In no particular order.
    tasks.
  * Configurability of volume creation.
  * Watch for ending runs and delete the volume mount - this is tricky without deleting the pipelinerun that is using it too.
+ * ~~Support private Git repositories.~~
  * ~~Provide the hook ID as an "execution ID" to improve traceability.~~
  * ~~Support for secrets to validate incoming Webhooks.~~
  * ~~Support for parallelism via build matrices.~~

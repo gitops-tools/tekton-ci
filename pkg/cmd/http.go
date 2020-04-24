@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -32,7 +33,7 @@ func makeHTTPCmd() *cobra.Command {
 		Use:   "http",
 		Short: "execute PipelineRuns in response to hooks",
 		Run: func(cmd *cobra.Command, args []string) {
-			scmClient, err := factory.NewClient(viper.GetString("driver"), "", "")
+			scmClient, err := factory.NewClient(viper.GetString("driver"), "", githubToken())
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -148,5 +149,8 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 		"used for the generateName in the generated PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-serviceaccount-name", cmd.Flags().Lookup("pipelinerun-serviceaccount-name")))
+}
 
+func githubToken() string {
+	return os.Getenv("GITHUB_TOKEN")
 }
