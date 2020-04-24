@@ -25,6 +25,7 @@ const (
 	testArchiveURL         = "https://example/com/testing"
 	testRepoURL            = "https://github.com/myorg/testing.git"
 	testServiceAccountName = "test-account"
+	testEvtID              = "26400635-d8f4-4cf5-a45f-bd03856bdf2b"
 )
 
 func TestMakeGitCloneTask(t *testing.T) {
@@ -150,7 +151,7 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", nil)
+	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", nil, testEvtID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +241,7 @@ func TestConvert(t *testing.T) {
 			},
 			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 		},
-	}, AnnotateSource(source))
+	}, AnnotateSource(testEvtID, source))
 
 	if diff := cmp.Diff(want, pr); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
@@ -266,7 +267,7 @@ func TestConvertFixtures(t *testing.T) {
 				t.Fatal(err)
 			}
 			logger := zaptest.NewLogger(rt, zaptest.Level(zap.WarnLevel))
-			pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx)
+			pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx, testEvtID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -355,13 +356,14 @@ func TestAnnotateSource(t *testing.T) {
 	cloneURL := "https://github.com/bigkevmcd/tekton-ci.git"
 	ref := "refs/heads/master"
 	src := &Source{RepoURL: cloneURL, Ref: ref}
-	pr := resources.PipelineRun("dsl", "test-", pipelinev1.PipelineRunSpec{}, AnnotateSource(src))
+	pr := resources.PipelineRun("dsl", "test-", pipelinev1.PipelineRunSpec{}, AnnotateSource(testEvtID, src))
 
 	want := map[string]string{
 		"tekton.dev/git-status":     "true",
 		"tekton.dev/status-context": "tekton-ci",
 		"tekton.dev/ci-source-url":  cloneURL,
 		"tekton.dev/ci-source-ref":  ref,
+		"tekton.dev/hook-id":        testEvtID,
 	}
 	if diff := cmp.Diff(want, pr.ObjectMeta.Annotations); diff != "" {
 		t.Fatalf("Source() failed: %s\n", diff)

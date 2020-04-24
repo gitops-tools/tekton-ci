@@ -102,7 +102,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pr, err := Convert(parsed, h.log, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, celCtx)
+	pr, err := Convert(parsed, h.log, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, celCtx, evt.GUID)
 	if err != nil {
 		h.log.Errorf("error converting pipeline to pipelinerun: %s %#v", err, celCtx.Data)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

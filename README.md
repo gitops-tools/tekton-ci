@@ -230,8 +230,8 @@ In no particular order.
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
  * Configurability of volume creation.
- * Provide the hook ID as an "execution ID" to improve traceability.
  * Watch for ending runs and delete the volume mount - this is tricky without deleting the pipelinerun that is using it too.
+ * ~~Provide the hook ID as an "execution ID" to improve traceability.~~
  * ~~Support for secrets to validate incoming Webhooks.~~
  * ~~Support for parallelism via build matrices.~~
  * ~~Allow passing params from the Tekton task mechanism through to the Task.~~

@@ -93,6 +93,10 @@ func TestHandlePushEvent(t *testing.T) {
 	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Container.Command); diff != "" {
 		t.Fatalf("git command incorrect, diff\n%s", diff)
 	}
+	prUUID := pr.ObjectMeta.Annotations[hookIDAnnotation]
+	if deliveryID := req.Header.Get("X-GitHub-Delivery"); prUUID != deliveryID {
+		t.Fatalf("PR UUID got %s, want %s", prUUID, deliveryID)
+	}
 }
 
 func TestHandlePushEventNoPipeline(t *testing.T) {

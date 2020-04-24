@@ -14,13 +14,16 @@ import (
 )
 
 const (
-	gitCloneTaskName     = "git-clone"
-	beforeStepTaskName   = "before-step"
-	afterStepTaskName    = "after-step"
-	workspaceName        = "git-checkout"
-	workspaceBindingName = "source"
-	workspaceSourcePath  = "$(workspaces.source.path)"
-	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
+	gitCloneTaskName      = "git-clone"
+	beforeStepTaskName    = "before-step"
+	afterStepTaskName     = "after-step"
+	workspaceName         = "git-checkout"
+	workspaceBindingName  = "source"
+	workspaceSourcePath   = "$(workspaces.source.path)"
+	hookIDAnnotation      = "tekton.dev/hook-id"
+	ciSourceURLAnnotation = "tekton.dev/ci-source-url"
+	ciSourceRefAnnotation = "tekton.dev/ci-source-ref"
+	tektonGitInit         = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
 )
 
 // Source wraps a git clone URL and a specific ref to checkout.
@@ -29,17 +32,18 @@ type Source struct {
 	Ref     string
 }
 
-func AnnotateSource(src *Source) func(*pipelinev1.PipelineRun) {
+func AnnotateSource(evtID string, src *Source) func(*pipelinev1.PipelineRun) {
 	return func(pr *pipelinev1.PipelineRun) {
-		pr.ObjectMeta.Annotations["tekton.dev/ci-source-url"] = src.RepoURL
-		pr.ObjectMeta.Annotations["tekton.dev/ci-source-ref"] = src.Ref
+		pr.ObjectMeta.Annotations[ciSourceURLAnnotation] = src.RepoURL
+		pr.ObjectMeta.Annotations[ciSourceRefAnnotation] = src.Ref
+		pr.ObjectMeta.Annotations[hookIDAnnotation] = evtID
 	}
 }
 
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
-func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context) (*pipelinev1.PipelineRun, error) {
+func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context, id string) (*pipelinev1.PipelineRun, error) {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
@@ -105,7 +109,7 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 	if p.TektonConfig != nil {
 		spec.ServiceAccountName = p.TektonConfig.ServiceAccountName
 	}
-	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec, AnnotateSource(src)), nil
+	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec, AnnotateSource(id, src)), nil
 }
 
 func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev1.EnvVar, image string, ctx *cel.Context) (*pipelinev1.PipelineTask, error) {
