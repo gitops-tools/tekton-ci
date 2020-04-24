@@ -6,6 +6,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
@@ -14,7 +16,10 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
-const testSHA = "9bb041d2f04027d96db99979c58531c3f6e39312"
+const (
+	testSHA   = "9bb041d2f04027d96db99979c58531c3f6e39312"
+	sourceURL = "https://github.com/bigkevmcd/tekton-ci.git"
+)
 
 func TestFindCommit(t *testing.T) {
 	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
@@ -46,7 +51,6 @@ func TestFindCommit(t *testing.T) {
 }
 
 func TestFindRepoURL(t *testing.T) {
-	sourceURL := "https://github.com/bigkevmcd/tekton-ci.git"
 	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Tasks: []pipelinev1.PipelineTask{},
@@ -96,5 +100,16 @@ func TestCommitStatusInput(t *testing.T) {
 	cs := commitStatusInput(pr)
 	if diff := cmp.Diff(want, cs); diff != "" {
 		t.Fatalf("commitStatusInput failed:\n%s", diff)
+	}
+}
+
+func TestParseRepoFromURL(t *testing.T) {
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	r, err := parseRepoFromURL(sourceURL, logger.Sugar())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != "bigkevmcd/tekton-ci" {
+		t.Fatalf("parseRepoFromURL got %s, want %s", r, "bigkevmcd/tekton-ci")
 	}
 }
