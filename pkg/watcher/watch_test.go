@@ -3,14 +3,20 @@ package watcher
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
-func TestFindCommit(t *testing.T) {
-	want := "9bb041d2f04027d96db99979c58531c3f6e39312"
+const testSHA = "9bb041d2f04027d96db99979c58531c3f6e39312"
 
+func TestFindCommit(t *testing.T) {
 	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Tasks: []pipelinev1.PipelineTask{},
@@ -23,7 +29,7 @@ func TestFindCommit(t *testing.T) {
 					Status: &pipelinev1.TaskRunStatus{
 						TaskRunStatusFields: pipelinev1.TaskRunStatusFields{
 							ResourcesResult: []pipelinev1.PipelineResourceResult{
-								pipelinev1.PipelineResourceResult{Key: "commit", Value: want},
+								{Key: "commit", Value: testSHA},
 							},
 						},
 					},
@@ -32,11 +38,63 @@ func TestFindCommit(t *testing.T) {
 		},
 	}
 
-	commit, err := FindCommit(pr)
-	if err != nil {
-		t.Fatal(err)
+	commit := findCommit(pr)
+
+	if commit != testSHA {
+		t.Fatalf("findCommit() got %#v, want %#v", commit, testSHA)
 	}
-	if commit != want {
-		t.Fatalf("FindCommit() got %#v, want %#v", commit, want)
+}
+
+func TestFindRepoURL(t *testing.T) {
+	sourceURL := "https://github.com/bigkevmcd/tekton-ci.git"
+	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{},
+		},
+	}, dsl.AnnotateSource(&dsl.Source{RepoURL: sourceURL, Ref: "master"}))
+
+	repoURL := findRepoURL(pr)
+
+	if repoURL != sourceURL {
+		t.Fatalf("findRepoURL() got %#v, want %#v", repoURL, sourceURL)
+	}
+}
+
+func TestCommitStatusInput(t *testing.T) {
+	want := &scm.StatusInput{
+		State: scm.StatePending,
+		Label: TektonCILabel,
+		Desc:  "Tekton CI Status",
+	}
+
+	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{},
+		},
+	})
+	pr.Status = pipelinev1.PipelineRunStatus{
+		Status: duckv1beta1.Status{
+			Conditions: []apis.Condition{
+				{Type: apis.ConditionSucceeded, Status: corev1.ConditionUnknown},
+			},
+		},
+		PipelineRunStatusFields: pipelinev1.PipelineRunStatusFields{
+			TaskRuns: map[string]*pipelinev1.PipelineRunTaskRunStatus{
+				"testing": {
+					Status: &pipelinev1.TaskRunStatus{
+						TaskRunStatusFields: pipelinev1.TaskRunStatusFields{
+							ResourcesResult: []pipelinev1.PipelineResourceResult{
+								{Key: "commit", Value: testSHA},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cs := commitStatusInput(pr)
+	if diff := cmp.Diff(want, cs); diff != "" {
+		t.Fatalf("commitStatusInput failed:\n%s", diff)
 	}
 }
