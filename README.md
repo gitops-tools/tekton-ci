@@ -219,7 +219,6 @@ In no particular order.
 
  * Support private Git repositories.
  * Metrics.
- * Watch for ending runs and delete the volume mount.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
@@ -232,6 +231,7 @@ In no particular order.
    tasks.
  * Configurability of volume creation.
  * Provide the hook ID as an "execution ID" to improve traceability.
+ * Watch for ending runs and delete the volume mount - this is tricky without deleting the pipelinerun that is using it too.
  * ~~Support for secrets to validate incoming Webhooks.~~
  * ~~Support for parallelism via build matrices.~~
  * ~~Allow passing params from the Tekton task mechanism through to the Task.~~
