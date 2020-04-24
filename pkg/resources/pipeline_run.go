@@ -6,10 +6,12 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
+type pipelineRunOption func(*pipelinev1.PipelineRun)
+
 // PipelineRun creates a PipelineRun with the name, standard labels, and the
 // provided Spec.
-func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec) *pipelinev1.PipelineRun {
-	return &pipelinev1.PipelineRun{
+func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, options ...pipelineRunOption) *pipelinev1.PipelineRun {
+	pr := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: prName,
@@ -18,6 +20,11 @@ func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec) *pip
 		},
 		Spec: spec,
 	}
+
+	for _, o := range options {
+		o(pr)
+	}
+	return pr
 }
 
 func annotations() map[string]string {

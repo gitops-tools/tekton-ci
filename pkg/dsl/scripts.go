@@ -29,6 +29,13 @@ type Source struct {
 	Ref     string
 }
 
+func AnnotateSource(src *Source) func(*pipelinev1.PipelineRun) {
+	return func(pr *pipelinev1.PipelineRun) {
+		pr.ObjectMeta.Annotations["tekton.dev/ci-source-url"] = src.RepoURL
+		pr.ObjectMeta.Annotations["tekton.dev/ci-source-ref"] = src.Ref
+	}
+}
+
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
@@ -98,7 +105,7 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 	if p.TektonConfig != nil {
 		spec.ServiceAccountName = p.TektonConfig.ServiceAccountName
 	}
-	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec), nil
+	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec, AnnotateSource(src)), nil
 }
 
 func makeTaskForStage(job *ci.Task, stage string, runAfter []string, env []corev1.EnvVar, image string, ctx *cel.Context) (*pipelinev1.PipelineTask, error) {

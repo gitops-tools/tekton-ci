@@ -240,7 +240,7 @@ func TestConvert(t *testing.T) {
 			},
 			Workspaces: []pipelinev1.WorkspacePipelineDeclaration{{Name: "git-checkout"}},
 		},
-	})
+	}, AnnotateSource(source))
 
 	if diff := cmp.Diff(want, pr); diff != "" {
 		t.Fatalf("PipelineRun doesn't match:\n%s", diff)
@@ -272,7 +272,7 @@ func TestConvertFixtures(t *testing.T) {
 			}
 			want := readPipelineRunFixture(rt, fmt.Sprintf("testdata/%s_pipeline_run.yaml", tt.name))
 			if diff := cmp.Diff(want, pr); diff != "" {
-				t.Errorf("PipelineRun doesn't match:\n%s", diff)
+				t.Errorf("PipelineRun %s doesn't match:\n%s", tt.name, diff)
 			}
 		})
 	}
@@ -348,6 +348,23 @@ func TestMakeTaskEnvMatrix(t *testing.T) {
 		if diff := cmp.Diff(tt.want, got); diff != "" {
 			t.Fatalf("EnvVars don't match:\n%s", diff)
 		}
+	}
+}
+
+func TestAnnotateSource(t *testing.T) {
+	cloneURL := "https://github.com/bigkevmcd/tekton-ci.git"
+	ref := "refs/heads/master"
+	src := &Source{RepoURL: cloneURL, Ref: ref}
+	pr := resources.PipelineRun("dsl", "test-", pipelinev1.PipelineRunSpec{}, AnnotateSource(src))
+
+	want := map[string]string{
+		"tekton.dev/git-status":     "true",
+		"tekton.dev/status-context": "tekton-ci",
+		"tekton.dev/ci-source-url":  cloneURL,
+		"tekton.dev/ci-source-ref":  ref,
+	}
+	if diff := cmp.Diff(want, pr.ObjectMeta.Annotations); diff != "" {
+		t.Fatalf("Source() failed: %s\n", diff)
 	}
 }
 
