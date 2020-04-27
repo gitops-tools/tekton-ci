@@ -10,6 +10,7 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labelsv1 "k8s.io/apimachinery/pkg/labels"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 )
@@ -19,7 +20,9 @@ const TektonCILabel = "tekton-ci"
 func WatchPipelineRuns(s *scm.Client, c pipelineclientset.Interface, ns string, l logger.Logger) error {
 	l.Infow("starting to watch for pipelineruns", "ns", ns)
 	api := c.TektonV1beta1().PipelineRuns(ns)
-	listOptions := metav1.ListOptions{}
+	listOptions := metav1.ListOptions{
+		LabelSelector: labelsv1.Set(map[string]string{"app.kubernetes.io/part-of": "Tekton-CI"}).AsSelector().String(),
+	}
 	watcher, err := api.Watch(listOptions)
 	if err != nil {
 		l.Errorf("failed to watch pipelineruns: %s\n", err)

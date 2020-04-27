@@ -55,7 +55,7 @@ func TestFindRepoURL(t *testing.T) {
 		PipelineSpec: &pipelinev1.PipelineSpec{
 			Tasks: []pipelinev1.PipelineTask{},
 		},
-	}, dsl.AnnotateSource(&dsl.Source{RepoURL: sourceURL, Ref: "master"}))
+	}, dsl.AnnotateSource("test-id", &dsl.Source{RepoURL: sourceURL, Ref: "master"}))
 
 	repoURL := findRepoURL(pr)
 
