@@ -56,6 +56,10 @@ func TestMakeGitCloneTask(t *testing.T) {
 								Name:  "CI_PROJECT_DIR",
 								Value: "$(workspaces.source.path)",
 							},
+							{
+								Name:  "TEKTON_RESOURCE_NAME",
+								Value: "tekton-ci-git-clone-master",
+							},
 						},
 					},
 				},

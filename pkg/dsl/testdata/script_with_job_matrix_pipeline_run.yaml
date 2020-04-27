@@ -31,6 +31,8 @@ spec:
             value: github.com/bigkevmcd/github-tool
           - name: CI_PROJECT_DIR
             value: $(workspaces.source.path)
+          - name: TEKTON_RESOURCE_NAME
+            value: tekton-ci-git-clone-refs_pulls_4
           image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init
           name: git-clone
           resources: {}
