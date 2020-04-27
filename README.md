@@ -3,7 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/bigkevmcd/tekton-ci)](https://goreportcard.com/report/github.com/bigkevmcd/tekton-ci)
 ![Go](https://github.com/bigkevmcd/tekton-ci/workflows/Go/badge.svg)
 
-This is a very early, pre-Alpha release of this code.
+This is pre-Beta release of this code.
 
 It can take a CI definition, similar to the GitLab CI definition, and execute the steps / tasks as a [TektonCD](https://github.com/tektoncd/pipeline) PipelineRun.
 
