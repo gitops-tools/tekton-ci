@@ -58,7 +58,7 @@ func TestMakeGitCloneTask(t *testing.T) {
 							},
 							{
 								Name:  "TEKTON_RESOURCE_NAME",
-								Value: "tekton-ci-git-clone-master",
+								Value: "tekton-ci-git-clone",
 							},
 						},
 					},

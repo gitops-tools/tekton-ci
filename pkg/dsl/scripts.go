@@ -2,7 +2,6 @@ package dsl
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/google/cel-go/common/types"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -158,16 +157,11 @@ func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask 
 					Name:    "git-clone",
 					Image:   tektonGitInit,
 					Command: []string{"/ko-app/git-init", "-url", src.RepoURL, "-revision", src.Ref, "-path", workspaceSourcePath},
-					Env:     append(env, sourceEnvVar(src)),
+					Env:     append(env, corev1.EnvVar{Name: "TEKTON_RESOURCE_NAME", Value: "tekton-ci-git-clone"}),
 				},
 			},
 		),
 	}
-}
-
-func sourceEnvVar(src *Source) corev1.EnvVar {
-	ref := strings.ReplaceAll(src.Ref, "/", "_")
-	return corev1.EnvVar{Name: "TEKTON_RESOURCE_NAME", Value: "tekton-ci-git-clone-" + ref}
 }
 
 func makeScriptTask(name string, runAfter []string, env []corev1.EnvVar, image string, script []string) pipelinev1.PipelineTask {

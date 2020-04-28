@@ -32,7 +32,7 @@ spec:
           - name: CI_PROJECT_DIR
             value: $(workspaces.source.path)
           - name: TEKTON_RESOURCE_NAME
-            value: tekton-ci-git-clone-refs_pulls_4
+            value: tekton-ci-git-clone
           image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init
           name: git-clone
           resources: {}
