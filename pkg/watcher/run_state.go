@@ -16,6 +16,7 @@ const (
 	Failed
 	Successful
 	Error
+	Unknown
 )
 
 func (s State) String() string {
@@ -23,7 +24,8 @@ func (s State) String() string {
 		"Pending",
 		"Failed",
 		"Successful",
-		"Error"}
+		"Error",
+		"Unknown"}
 	return names[s]
 }
 

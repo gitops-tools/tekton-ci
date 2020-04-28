@@ -6,11 +6,13 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-type pipelineRunOption func(*pipelinev1.PipelineRun)
+// PipelineRunOpt is a type that can modify a PipelineRun after it's created,
+// but before it's returned.
+type PipelineRunOpt func(*pipelinev1.PipelineRun)
 
 // PipelineRun creates a PipelineRun with the name, standard labels, and the
 // provided Spec.
-func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, options ...pipelineRunOption) *pipelinev1.PipelineRun {
+func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, options ...PipelineRunOpt) *pipelinev1.PipelineRun {
 	pr := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{

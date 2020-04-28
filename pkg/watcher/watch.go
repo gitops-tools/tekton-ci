@@ -15,11 +15,14 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 )
 
-const TektonCILabel = "tekton-ci"
+const (
+	tektonCILabel               = "tekton-ci"
+	notificationStateAnnotation = "tekton.dev/ci-notification-state"
+)
 
-func WatchPipelineRuns(s *scm.Client, c pipelineclientset.Interface, ns string, l logger.Logger) error {
+func WatchPipelineRuns(scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) error {
 	l.Infow("starting to watch for pipelineruns", "ns", ns)
-	api := c.TektonV1beta1().PipelineRuns(ns)
+	api := tektonClient.TektonV1beta1().PipelineRuns(ns)
 	listOptions := metav1.ListOptions{
 		LabelSelector: labelsv1.Set(map[string]string{"app.kubernetes.io/part-of": "Tekton-CI"}).AsSelector().String(),
 	}
@@ -34,7 +37,7 @@ func WatchPipelineRuns(s *scm.Client, c pipelineclientset.Interface, ns string, 
 		select {
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
-			err := handlePipelineRun(s, pr, l)
+			err := handlePipelineRun(scmClient, tektonClient, pr, l)
 			if err != nil {
 				l.Infow(fmt.Sprintf("error handling PipelineRun: %s", err), "name", pr.ObjectMeta.Name)
 			}
@@ -42,11 +45,11 @@ func WatchPipelineRuns(s *scm.Client, c pipelineclientset.Interface, ns string, 
 	}
 }
 
-func handlePipelineRun(s *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger) error {
+func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Interface, pr *pipelinev1.PipelineRun, l logger.Logger) error {
 	state := runState(pr)
 	l.Infof("Received a PipelineRun %#v %s", pr.Status, state)
-	if state == Failed || state == Successful {
-		err := sendNotification(s, pr, l)
+	if state.String() != findNotificationState(pr) {
+		err := sendNotification(scmClient, pr, l)
 		if err != nil {
 			return fmt.Errorf("failed to send notification %w", err)
 		}
@@ -54,8 +57,12 @@ func handlePipelineRun(s *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logge
 	return nil
 }
 
+func findNotificationState(pr *pipelinev1.PipelineRun) string {
+	return pr.ObjectMeta.Annotations[notificationStateAnnotation]
+}
+
 func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger) error {
-	repo, err := parseRepoFromURL(findRepoURL(pr), l)
+	repo, err := parseRepoFromURL(findRepoURL(pr))
 	if err != nil {
 		return err
 	}
@@ -90,17 +97,19 @@ func findRepoURL(pr *pipelinev1.PipelineRun) string {
 func commitStatusInput(pr *pipelinev1.PipelineRun) *scm.StatusInput {
 	return &scm.StatusInput{
 		State: convertState(runState(pr)),
-		Label: TektonCILabel,
+		Label: tektonCILabel,
 		Desc:  "Tekton CI Status",
 	}
 }
 
-func parseRepoFromURL(s string, l logger.Logger) (string, error) {
+func parseRepoFromURL(s string) (string, error) {
 	p, err := url.Parse(s)
 	if err != nil {
-		l.Errorf("failed to parse URL %s: %s", s, err)
-		return "", err
+		return "", fmt.Errorf("failed to parse URL %s: %s", s, err)
 	}
 	parts := strings.Split(p.Path, "/")
+	if len(parts) < 3 {
+		return "", fmt.Errorf("invalid repo URL: %s", s)
+	}
 	return strings.Join([]string{parts[1], strings.TrimSuffix(parts[2], ".git")}, "/"), nil
 }
