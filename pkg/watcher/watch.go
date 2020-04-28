@@ -34,16 +34,24 @@ func WatchPipelineRuns(s *scm.Client, c pipelineclientset.Interface, ns string, 
 		select {
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
-			state := runState(pr)
-			l.Infof("Received a PipelineRun %#v %s", pr.Status, state)
-			if state == Failed || state == Successful {
-				err := sendNotification(s, pr, l)
-				if err != nil {
-					l.Errorf("failed to send notification %#v\n", err)
-				}
+			err := handlePipelineRun(s, pr, l)
+			if err != nil {
+				l.Infow(fmt.Sprintf("error handling PipelineRun: %s", err), "name", pr.ObjectMeta.Name)
 			}
 		}
 	}
+}
+
+func handlePipelineRun(s *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger) error {
+	state := runState(pr)
+	l.Infof("Received a PipelineRun %#v %s", pr.Status, state)
+	if state == Failed || state == Successful {
+		err := sendNotification(s, pr, l)
+		if err != nil {
+			return fmt.Errorf("failed to send notification %w", err)
+		}
+	}
+	return nil
 }
 
 func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger) error {
