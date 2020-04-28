@@ -54,11 +54,17 @@ func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Int
 			return fmt.Errorf("failed to send notification %w", err)
 		}
 	}
-	return nil
+	setNotificationState(pr, state)
+	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(pr)
+	return err
 }
 
 func findNotificationState(pr *pipelinev1.PipelineRun) string {
 	return pr.ObjectMeta.Annotations[notificationStateAnnotation]
+}
+
+func setNotificationState(pr *pipelinev1.PipelineRun, s State) {
+	pr.ObjectMeta.Annotations[notificationStateAnnotation] = s.String()
 }
 
 func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger) error {
@@ -75,6 +81,7 @@ func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger
 	if err != nil {
 		return fmt.Errorf("failed to create status: %w", err)
 	}
+
 	l.Infof("sendNotification status created: %#v\n", s)
 	return nil
 }

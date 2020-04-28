@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
@@ -25,11 +26,11 @@ const (
 
 func TestHandlePipelineRun(t *testing.T) {
 	fakeSCM, data := fake.NewDefault()
-	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
 		dsl.AnnotateSource("test-id",
 			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}))
+	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
 	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
 
@@ -39,6 +40,14 @@ func TestHandlePipelineRun(t *testing.T) {
 	}
 	if statuses[0].State != scm.StatePending {
 		t.Fatalf("incorrect state notified, got %v, want %v", statuses[0].State, scm.StatePending)
+	}
+
+	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := findNotificationState(loaded); s != "Pending" {
+		t.Fatalf("post-handling last state got %s, want %s", s, "Pending")
 	}
 }
 
