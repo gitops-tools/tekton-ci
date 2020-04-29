@@ -92,6 +92,45 @@ func TestParseWebhookWithInvalidSignature(t *testing.T) {
 	}
 }
 
+func TestCreateStatus(t *testing.T) {
+	m := metrics.NewMock()
+	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e", "master", "testdata/content.json")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := New(scmClient, nil, m)
+
+	status := &scm.StatusInput{
+		State: scm.StatePending,
+		Label: "testing",
+		Desc:  "Tekton CI Status",
+	}
+	err = client.CreateStatus(context.TODO(), "Codertocat/Hello-World", "6dcb09b5b57875f334f61aebed695e2e4193db5e", status)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.APICalls != 1 {
+		t.Fatalf("metrics count of API calls, got %d, want 1", m.APICalls)
+	}
+}
+
+// func TestCreateStatusWithNotFoundResponse(t *testing.T) {
+// 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
+// 	defer as.Close()
+// 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	client := New(scmClient, nil, metrics.NewMock())
+
+// 	_, err = client.CreateStatus(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
+// 	if !IsNotFound(err) {
+// 		t.Fatal(err)
+// 	}
+// }
+
 func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != urlPath {

@@ -13,4 +13,6 @@ type SCM interface {
 	ParseWebhookRequest(req *http.Request) (scm.Webhook, error)
 	// FileContents returns the contents of a file within a repo.
 	FileContents(ctx context.Context, repo, path, ref string) ([]byte, error)
+	// CreateStatus creates a new commit status for the repo/commit combination.
+	CreateStatus(ctx context.Context, repo, commit string, s *scm.StatusInput) error
 }

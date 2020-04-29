@@ -46,20 +46,20 @@ func WatchPipelineRuns(scmClient *scm.Client, tektonClient pipelineclientset.Int
 }
 
 func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Interface, pr *pipelinev1.PipelineRun, l logger.Logger) error {
-	origState := runState(pr)
-	l.Infof("Received a PipelineRun %#v %s", pr.Status, origState)
-	if origState.String() != findNotificationState(pr) {
+	newState := runState(pr)
+	l.Infof("Received a PipelineRun %#v %s", pr.Status, newState)
+	if newState.String() != notificationState(pr) {
 		err := sendNotification(scmClient, pr, l)
 		if err != nil {
 			return fmt.Errorf("failed to send notification %w", err)
 		}
 	}
-	setNotificationState(pr, origState)
+	setNotificationState(pr, newState)
 	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(pr)
 	return err
 }
 
-func findNotificationState(pr *pipelinev1.PipelineRun) string {
+func notificationState(pr *pipelinev1.PipelineRun) string {
 	return pr.ObjectMeta.Annotations[notificationStateAnnotation]
 }
 

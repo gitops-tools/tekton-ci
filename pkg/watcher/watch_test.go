@@ -46,7 +46,7 @@ func TestHandlePipelineRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := findNotificationState(loaded); s != "Pending" {
+	if s := notificationState(loaded); s != "Pending" {
 		t.Fatalf("post-handling last state got %s, want %s", s, "Pending")
 	}
 }
@@ -71,7 +71,7 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := findNotificationState(loaded); s != "Pending" {
+	if s := notificationState(loaded); s != "Pending" {
 		t.Fatalf("post-handling last state got %s, want %s", s, "Pending")
 	}
 }
@@ -98,7 +98,7 @@ func TestHandlePipelineRunWithNewState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := findNotificationState(loaded); s != "Successful" {
+	if s := notificationState(loaded); s != "Successful" {
 		t.Fatalf("post-handling last state got %s, want %s", s, "Successful")
 	}
 }
@@ -117,10 +117,10 @@ func TestFindNotificationState(t *testing.T) {
 	pr := makePipelineRun()
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
 
-	state := findNotificationState(pr)
+	state := notificationState(pr)
 
 	if state != Pending.String() {
-		t.Fatalf("findNotificationState() got %s, want %s", state, Pending.String())
+		t.Fatalf("notificationState() got %s, want %s", state, Pending.String())
 	}
 }
 

@@ -48,6 +48,15 @@ func (c *SCMClient) FileContents(ctx context.Context, repo, path, ref string) ([
 	return content.Data, nil
 }
 
+// CreateStatus creates a commit status.
+//
+// If an HTTP error is returned by the upstream service, an error with the
+// response status code is returned.
+func (c *SCMClient) CreateStatus(ctx context.Context, repo, commit string, s *scm.StatusInput) error {
+	_, _, err := c.client.Repositories.CreateStatus(ctx, repo, commit, s)
+	return err
+}
+
 func isErrorStatus(i int) bool {
 	return i > 400
 }
