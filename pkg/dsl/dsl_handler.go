@@ -31,19 +31,19 @@ type Handler struct {
 	namespace      string
 	volumeCreator  volumes.Creator
 	config         *Configuration
-	metrics        *metrics.PrometheusMetrics
+	m              metrics.Interface
 }
 
 // New creates and returns a new Handler for converting ci.Pipelines into
 // PipelineRuns.
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, m *metrics.PrometheusMetrics, cfg *Configuration, namespace string, l logger.Logger) *Handler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, m metrics.Interface, cfg *Configuration, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
 		volumeCreator:  volumeCreator,
 		log:            l,
 		config:         cfg,
-		metrics:        m,
+		m:              m,
 		namespace:      namespace,
 	}
 }
@@ -53,11 +53,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.log.Errorf("error parsing webhook: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		h.metrics.CountInvalidHook()
+		h.m.CountInvalidHook()
 		return
 	}
 
-	h.metrics.CountHook(hook)
+	h.m.CountHook(hook)
 
 	if hook.Kind() == scm.WebhookKindPush {
 		h.push(r.Context(), hook.(*scm.PushHook), w)

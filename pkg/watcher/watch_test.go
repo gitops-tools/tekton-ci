@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
@@ -29,7 +28,8 @@ func TestHandlePipelineRun(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
 		dsl.AnnotateSource("test-id",
-			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}))
+			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}),
+		taskResult())
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
 	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
@@ -53,12 +53,13 @@ func TestHandlePipelineRun(t *testing.T) {
 
 func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	fakeSCM, data := fake.NewDefault()
-	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
 		dsl.AnnotateSource("test-id",
-			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}))
+			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}),
+		taskResult())
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
+	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
 	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
 
@@ -66,10 +67,44 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	if l := len(statuses); l != 0 {
 		t.Fatalf("incorrect number of statuses notifified, got %d, want 0", l)
 	}
+	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := findNotificationState(loaded); s != "Pending" {
+		t.Fatalf("post-handling last state got %s, want %s", s, "Pending")
+	}
+}
+
+func TestHandlePipelineRunWithNewState(t *testing.T) {
+	fakeSCM, data := fake.NewDefault()
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	pr := makePipelineRun(
+		dsl.AnnotateSource("test-id",
+			&dsl.Source{RepoURL: testSourceURL, Ref: "master"}),
+		taskResult(),
+		statusCondition(apis.ConditionSucceeded, corev1.ConditionTrue),
+	)
+	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
+	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
+
+	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+
+	statuses := data.Statuses[testSHA]
+	if l := len(statuses); l != 1 {
+		t.Fatalf("incorrect number of statuses notifified, got %d, want 1", l)
+	}
+	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := findNotificationState(loaded); s != "Successful" {
+		t.Fatalf("post-handling last state got %s, want %s", s, "Successful")
+	}
 }
 
 func TestFindCommit(t *testing.T) {
-	pr := makePipelineRun()
+	pr := makePipelineRun(taskResult())
 
 	commit := findCommit(pr)
 
@@ -137,18 +172,9 @@ func statusCondition(c apis.ConditionType, s corev1.ConditionStatus) resources.P
 	}
 }
 
-func makePipelineRun(opts ...resources.PipelineRunOpt) *pipelinev1.PipelineRun {
-	pr := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
-		PipelineSpec: &pipelinev1.PipelineSpec{
-			Tasks: []pipelinev1.PipelineTask{},
-		},
-	}, opts...)
-
-	pr.Status = pipelinev1.PipelineRunStatus{
-		Status: duckv1beta1.Status{
-			Conditions: []apis.Condition{},
-		},
-		PipelineRunStatusFields: pipelinev1.PipelineRunStatusFields{
+func taskResult() resources.PipelineRunOpt {
+	return func(pr *pipelinev1.PipelineRun) {
+		pr.Status.PipelineRunStatusFields = pipelinev1.PipelineRunStatusFields{
 			TaskRuns: map[string]*pipelinev1.PipelineRunTaskRunStatus{
 				"testing": {
 					Status: &pipelinev1.TaskRunStatus{
@@ -160,7 +186,14 @@ func makePipelineRun(opts ...resources.PipelineRunOpt) *pipelinev1.PipelineRun {
 					},
 				},
 			},
-		},
+		}
 	}
-	return pr
+}
+
+func makePipelineRun(opts ...resources.PipelineRunOpt) *pipelinev1.PipelineRun {
+	return resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
+		PipelineSpec: &pipelinev1.PipelineSpec{
+			Tasks: []pipelinev1.PipelineTask{},
+		},
+	}, opts...)
 }

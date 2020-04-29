@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/prometheus/client_golang/prometheus"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -34,13 +33,13 @@ func TestHandlePushEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient, secrets.NewMock())
+	gitClient := git.New(scmClient, secrets.NewMock(), metrics.NewMock())
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	cfg := testConfiguration()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), cfg, testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), cfg, testNS, logger.Sugar())
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -107,12 +106,12 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gitClient := git.New(scmClient, secrets.NewMock())
+	gitClient := git.New(scmClient, secrets.NewMock(), metrics.NewMock())
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 

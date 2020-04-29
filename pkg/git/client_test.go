@@ -12,19 +12,21 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
 	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/test"
 	"github.com/bigkevmcd/tekton-ci/test/secret"
 )
 
 func TestFileContents(t *testing.T) {
+	m := metrics.NewMock()
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "testdata/content.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient, nil)
+	client := New(scmClient, nil, m)
 
 	body, err := client.FileContents(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
 	if err != nil {
@@ -33,6 +35,9 @@ func TestFileContents(t *testing.T) {
 	want := []byte("testing service\n")
 	if diff := cmp.Diff(want, body); diff != "" {
 		t.Fatalf("got a different body back: %s\n", diff)
+	}
+	if m.APICalls != 1 {
+		t.Fatalf("metrics count of API calls, got %d, want 1", m.APICalls)
 	}
 }
 
@@ -43,7 +48,7 @@ func TestFileContentsWithNotFoundResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient, nil)
+	client := New(scmClient, nil, metrics.NewMock())
 
 	_, err = client.FileContents(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
 	if !IsNotFound(err) {
@@ -61,7 +66,7 @@ func TestParseWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient))
+	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient), metrics.NewMock())
 	hook, err := client.ParseWebhookRequest(req)
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +85,7 @@ func TestParseWebhookWithInvalidSignature(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient))
+	client := New(scmClient, secrets.New(hookSecret.ObjectMeta.Namespace, hookSecret.ObjectMeta.Name, fakeClient), metrics.NewMock())
 	_, err = client.ParseWebhookRequest(req)
 	if err != scm.ErrSignatureInvalid {
 		t.Fatal(err)
