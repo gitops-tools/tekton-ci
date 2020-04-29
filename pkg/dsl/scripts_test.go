@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
@@ -388,6 +389,7 @@ func testConfiguration() *Configuration {
 		ArchiverImage:             testArchiverImage,
 		ArchiveURL:                testArchiveURL,
 		DefaultServiceAccountName: testServiceAccountName,
+		VolumeSize:                resource.MustParse("1G"),
 	}
 }
 

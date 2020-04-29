@@ -38,8 +38,9 @@ func TestHandlePushEvent(t *testing.T) {
 	fakeTektonClient := fakeclientset.NewSimpleClientset()
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
+	cfg := testConfiguration()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, fakeTektonClient, vc, metrics.New(prometheus.NewRegistry()), cfg, testNS, logger.Sugar())
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -62,7 +63,7 @@ func TestHandlePushEvent(t *testing.T) {
 		Spec: corev1.PersistentVolumeClaimSpec{
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					"storage": defaultVolumeSize,
+					"storage": cfg.VolumeSize,
 				},
 			},
 			AccessModes: []corev1.PersistentVolumeAccessMode{

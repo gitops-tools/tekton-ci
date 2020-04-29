@@ -9,7 +9,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
@@ -22,8 +21,6 @@ import (
 const (
 	pipelineFilename = ".tekton_ci.yaml"
 )
-
-var defaultVolumeSize = resource.MustParse("1Gi")
 
 // Handler implements the GitEventHandler interface and processes
 // .tekton_ci.yaml files in a repository.
@@ -96,7 +93,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		return
 	}
 
-	vc, err := h.volumeCreator.Create(h.namespace, defaultVolumeSize)
+	vc, err := h.volumeCreator.Create(h.namespace, h.config.VolumeSize)
 	if err != nil {
 		h.log.Errorf("error creating volume: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

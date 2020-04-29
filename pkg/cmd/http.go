@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -26,6 +27,7 @@ import (
 
 const (
 	defaultPipelineRunPrefix = "test-pipelinerun-"
+	defaultVolumeSize        = "1G"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -116,6 +118,7 @@ func newDSLConfig() *dsl.Configuration {
 		ArchiveURL:                viper.GetString("archive-url"),
 		PipelineRunPrefix:         viper.GetString("pipelinerun-prefix"),
 		DefaultServiceAccountName: viper.GetString("pipelinerun-serviceaccount-name"),
+		VolumeSize:                resource.MustParse(viper.GetString("pipelinerun-volume-size")),
 	}
 }
 
@@ -149,6 +152,14 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 		"used for the generateName in the generated PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-serviceaccount-name", cmd.Flags().Lookup("pipelinerun-serviceaccount-name")))
+
+	cmd.Flags().String(
+		"pipelinerun-volume-size",
+		defaultVolumeSize,
+		"the size of the volume to create for pipeline runs",
+	)
+	logIfError(viper.BindPFlag("pipelinerun-volume-size", cmd.Flags().Lookup("pipelinerun-volume-size")))
+
 }
 
 func githubToken() string {
