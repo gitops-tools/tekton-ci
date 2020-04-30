@@ -20,7 +20,7 @@ const (
 	workspaceName         = "git-checkout"
 	workspaceBindingName  = "source"
 	workspaceSourcePath   = "$(workspaces.source.path)"
-	hookIDAnnotation      = "tekton.dev/hook-id"
+	hookIDAnnotation      = "tekton.dev/ci-hook-id"
 	ciSourceURLAnnotation = "tekton.dev/ci-source-url"
 	ciSourceRefAnnotation = "tekton.dev/ci-source-ref"
 	tektonGitInit         = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"

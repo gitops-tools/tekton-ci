@@ -43,7 +43,7 @@ func TestSecretForUnknownRepository(t *testing.T) {
 	g := New("testing", "tekton-ci-auth", fakeClient)
 
 	_, err := g.Secret(hook)
-	if err.Error() != "no secret for repository: Codertocat/Hello-World" {
+	if err.Error() != "no secret for repository Codertocat/Hello-World, looked for Codertocat_Hello-World in tekton-ci-auth" {
 		t.Fatal(err)
 	}
 }

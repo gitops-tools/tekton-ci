@@ -179,7 +179,7 @@ compile:
 
 The other HTTP handler is at `/pipelinerun`, this supports standard [PipelineRuns](https://github.com/tektoncd/pipeline/blob/master/docs/pipelineruns.md) with a wrapper around them to automate extraction of the arguments from the incoming hook body.
 
-The example below, if placed in `.tekton/pull_request.yaml` will trigger a simple script that echoes the SHA of the commit when a pull-request is opened.
+The example below, if placed in `.tekton/push.yaml` will trigger a simple script that echoes the SHA of the commit when a push is made to `master`.
 
 The expressions in the `filter` and `paramBindings` use [CEL syntax](https://github.com/google/cel-go), and the `hook` comes from the incoming hook, in the example below, this is a [PushHook](https://github.com/jenkins-x/go-scm/blob/master/scm/webhook.go#L77).
 
@@ -196,7 +196,7 @@ pipelineRunSpec:
   pipelineSpec:
     params:
       - name: COMMIT_SHA
-        description: "The commit from the pull_request"
+        description: "The commit from the push"
         type: string
     tasks:
       - name: echo-commit
@@ -225,19 +225,25 @@ $ go test -v ./...
 
 In no particular order.
 
+ * Integration of the GitHub status notifications.
+ * Switch to the new volumeClaimTemplate
+   https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
  * Metrics.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
- * Configuration for archiving - currently spawns an image with a URL, how to
-   do configuration for this?
+ * Configuration for archiving - currently spawns an image with a URL, how to do
+   configuration for this?
  * Support for service-broker bindings.
- * Integration of the GitHub status notifications.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
- * Configurability of volume creation.
- * Watch for ending runs and delete the volume mount - this is tricky without deleting the pipelinerun that is using it too.
+ * Switch to the new volumeClaimTemplate https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
+ * Watch for ending runs and delete the volume mount - this is tricky without
+   deleting the pipelinerun that is using it too. (volumeClaimTemplate will
+   solve this).
+ * Maintain a queryable database of test-runs, with metrics.
+ * ~~Configurability of volume creation.~~
  * ~~Support private Git repositories.~~
  * ~~Provide the hook ID as an "execution ID" to improve traceability.~~
  * ~~Support for secrets to validate incoming Webhooks.~~

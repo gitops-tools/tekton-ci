@@ -26,8 +26,8 @@ func logIfError(e error) {
 
 func makeRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tekton-cli",
-		Short: "Generate a TektonCD PipelineRun from a CI pipeline description",
+		Use:   "ci-hook-server",
+		Short: "Tekton CI",
 		Run: func(cmd *cobra.Command, args []string) {
 			f, err := os.Open(viper.GetString("pipeline-file"))
 			logIfError(err)

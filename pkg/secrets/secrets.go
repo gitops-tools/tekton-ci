@@ -37,9 +37,10 @@ func (k KubeSecretGetter) Secret(hook scm.Webhook) (string, error) {
 		return "", err
 	}
 	fullName := hook.Repository().FullName
-	token, ok := secret.Data[fullNameToKey(fullName)]
+	keyName := fullNameToKey(fullName)
+	token, ok := secret.Data[keyName]
 	if !ok {
-		return "", fmt.Errorf("no secret for repository: %s", fullName)
+		return "", fmt.Errorf("no secret for repository %s, looked for %s in %s", fullName, keyName, k.name)
 	}
 	return string(token), nil
 }
