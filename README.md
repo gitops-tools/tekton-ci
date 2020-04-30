@@ -134,6 +134,10 @@ test:
     - go vet ./...
     - ./bin/golangci-lint run
     - go test -race ./...
+  # This is an optional extension - you can configure a specific image for a
+  # task's script to execute in.
+  tekton:
+    image: my-test-image
 
 # This will execute the non-cluster Task "my-test-task".
 tekton-task
