@@ -242,7 +242,6 @@ In no particular order.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
- * Switch to the new volumeClaimTemplate https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
  * Watch for ending runs and delete the volume mount - this is tricky without
    deleting the pipelinerun that is using it too. (volumeClaimTemplate will
    solve this).
