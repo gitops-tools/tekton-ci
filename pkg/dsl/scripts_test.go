@@ -149,6 +149,9 @@ func TestConvert(t *testing.T) {
 				Artifacts: ci.Artifacts{
 					Paths: []string{"my-test-binary"},
 				},
+				Tekton: &ci.TektonTask{
+					Image: "test-compile-image",
+				},
 			},
 		},
 		AfterScript: []string{
@@ -219,7 +222,7 @@ func TestConvert(t *testing.T) {
 					TaskSpec: &pipelinev1.TaskSpec{
 						Steps: []pipelinev1.Step{
 							{
-								Container: container("", "golang:latest", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
+								Container: container("", "test-compile-image", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
 							},
 						},
 						Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},

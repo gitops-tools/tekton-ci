@@ -36,10 +36,10 @@ type Rule struct {
 // TektonTask is an extension for executing Tekton Tasks.
 type TektonTask struct {
 	// Used to generate a matrix of configurations for parallel jobs.
-
 	Jobs    []map[string]string `json:"jobs,omitempty"`
 	TaskRef string              `json:"taskRef,omitempty"`
 	Params  []TektonTaskParam   `json:"params,omitempty"`
+	Image   string              `json:"image,omitempty"`
 }
 
 // TektonTaskParam is passed into a Tekton task.

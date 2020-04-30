@@ -1,0 +1,7 @@
+image: alpine
+
+format:
+  script:
+    - echo "testing"
+  tekton:
+    image: golang:latest

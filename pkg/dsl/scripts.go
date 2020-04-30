@@ -64,7 +64,11 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 			log.Infow("processing task", append(logMeta, "task", taskName)...)
 			taskMatrix := makeTaskEnvMatrix(env, task)
 			for i, m := range taskMatrix {
-				stageTask, err := makeTaskForStage(task, stageName, previous, m, p.Image, ctx)
+				image := p.Image
+				if task.Tekton != nil && task.Tekton.Image != "" {
+					image = task.Tekton.Image
+				}
+				stageTask, err := makeTaskForStage(task, stageName, previous, m, image, ctx)
 				if err != nil {
 					return nil, err
 				}

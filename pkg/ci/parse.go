@@ -148,6 +148,8 @@ func parseTektonTask(v interface{}) (*TektonTask, error) {
 			t.Jobs = jobs
 		case "taskRef":
 			t.TaskRef = v.(string)
+		case "image":
+			t.Image = v.(string)
 		case "params":
 			params, err := parseTektonTaskParams(v)
 			if err != nil {

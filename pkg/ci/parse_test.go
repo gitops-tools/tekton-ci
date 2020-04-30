@@ -93,6 +93,19 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/simple-with-tekton-image.yaml", &Pipeline{
+			Image:  "alpine",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				{Name: "format",
+					Stage:  DefaultStage,
+					Script: []string{`echo "testing"`},
+					Tekton: &TektonTask{
+						Image: "golang:latest",
+					},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {
