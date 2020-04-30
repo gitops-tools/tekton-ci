@@ -368,7 +368,7 @@ func TestAnnotateSource(t *testing.T) {
 		"tekton.dev/status-context": "tekton-ci",
 		"tekton.dev/ci-source-url":  cloneURL,
 		"tekton.dev/ci-source-ref":  ref,
-		"tekton.dev/hook-id":        testEvtID,
+		"tekton.dev/ci-hook-id":     testEvtID,
 	}
 	if diff := cmp.Diff(want, pr.ObjectMeta.Annotations); diff != "" {
 		t.Fatalf("Source() failed: %s\n", diff)
