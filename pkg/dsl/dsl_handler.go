@@ -15,7 +15,6 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
 	"github.com/bigkevmcd/tekton-ci/pkg/logger"
 	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
 const (
@@ -29,18 +28,16 @@ type Handler struct {
 	log            logger.Logger
 	pipelineClient pipelineclientset.Interface
 	namespace      string
-	volumeCreator  volumes.Creator
 	config         *Configuration
 	metrics        *metrics.PrometheusMetrics
 }
 
 // New creates and returns a new Handler for converting ci.Pipelines into
 // PipelineRuns.
-func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, m *metrics.PrometheusMetrics, cfg *Configuration, namespace string, l logger.Logger) *Handler {
+func New(scmClient git.SCM, pipelineClient pipelineclientset.Interface, m *metrics.PrometheusMetrics, cfg *Configuration, namespace string, l logger.Logger) *Handler {
 	return &Handler{
 		scmClient:      scmClient,
 		pipelineClient: pipelineClient,
-		volumeCreator:  volumeCreator,
 		log:            l,
 		config:         cfg,
 		metrics:        m,
@@ -93,13 +90,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		return
 	}
 
-	vc, err := h.volumeCreator.Create(h.namespace, h.config.VolumeSize)
-	if err != nil {
-		h.log.Errorf("error creating volume: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	pr, err := Convert(parsed, h.log, h.config, sourceFromPushEvent(evt), vc.ObjectMeta.Name, celCtx, evt.GUID)
+	pr, err := Convert(parsed, h.log, h.config, sourceFromPushEvent(evt), celCtx, evt.GUID)
 	if err != nil {
 		h.log.Errorf("error converting pipeline to pipelinerun: %s %#v", err, celCtx.Data)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

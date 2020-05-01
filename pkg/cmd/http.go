@@ -22,12 +22,11 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
 	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
 	"github.com/bigkevmcd/tekton-ci/pkg/spec"
-	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
 )
 
 const (
 	defaultPipelineRunPrefix = "test-pipelinerun-"
-	defaultVolumeSize        = "1G"
+	defaultVolumeSize        = "1Gi"
 )
 
 func makeHTTPCmd() *cobra.Command {
@@ -69,7 +68,6 @@ func makeHTTPCmd() *cobra.Command {
 			dslHandler := dsl.New(
 				gitClient,
 				tektonClient,
-				volumes.New(coreClient),
 				metrics.New(nil),
 				newDSLConfig(),
 				namespace,

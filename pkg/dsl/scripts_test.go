@@ -158,8 +158,16 @@ func TestConvert(t *testing.T) {
 			"echo after script",
 		},
 	}
+	cfg := testConfiguration()
+	defer func(f func() string) {
+		nameGenerator = f
+	}(nameGenerator)
 
-	pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", nil, testEvtID)
+	nameGenerator = func() string {
+		return pvcPrefix + "testing"
+	}
+
+	pr, err := Convert(p, logger.Sugar(), cfg, source, nil, testEvtID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,10 +178,8 @@ func TestConvert(t *testing.T) {
 		ServiceAccountName: testServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			{
-				Name: "git-checkout",
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: "my-volume-claim-123",
-				},
+				Name:                "git-checkout",
+				VolumeClaimTemplate: makeVolumeClaimTemplate(cfg.VolumeSize),
 			},
 		},
 		PipelineSpec: &pipelinev1.PipelineSpec{
@@ -265,6 +271,14 @@ func TestConvertFixtures(t *testing.T) {
 		{"script_with_job_matrix"},
 	}
 
+	defer func(f func() string) {
+		nameGenerator = f
+	}(nameGenerator)
+
+	nameGenerator = func() string {
+		return pvcPrefix + "testing"
+	}
+
 	for _, tt := range convertTests {
 		t.Run(tt.name, func(rt *testing.T) {
 			source := &Source{RepoURL: "https://github.com/bigkevmcd/github-tool.git", Ref: "refs/pulls/4"}
@@ -275,7 +289,7 @@ func TestConvertFixtures(t *testing.T) {
 				t.Fatal(err)
 			}
 			logger := zaptest.NewLogger(rt, zaptest.Level(zap.WarnLevel))
-			pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, "my-volume-claim-123", ctx, testEvtID)
+			pr, err := Convert(p, logger.Sugar(), testConfiguration(), source, ctx, testEvtID)
 			if err != nil {
 				t.Fatal(err)
 			}

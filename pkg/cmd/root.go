@@ -43,7 +43,7 @@ func makeRootCmd() *cobra.Command {
 			}()
 			sugar := logger.Sugar()
 
-			converted, err := dsl.Convert(parsed, sugar, newDSLConfig(), source, "shared-task-storage", nil, "unique-id")
+			converted, err := dsl.Convert(parsed, sugar, newDSLConfig(), source, nil, "unique-id")
 			if err != nil {
 				log.Fatalf("error converting the script: %v", err)
 			}

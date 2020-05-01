@@ -10,12 +10,20 @@ import (
 )
 
 func TestMakeVolumeClaimTemplate(t *testing.T) {
+	defer func(f func() string) {
+		nameGenerator = f
+	}(nameGenerator)
+
+	nameGenerator = func() string {
+		return pvcPrefix + "testing"
+	}
+
 	wantedSz := resource.MustParse("1G")
 	got := makeVolumeClaimTemplate(wantedSz)
 	want := &corev1.PersistentVolumeClaim{
 		TypeMeta: pvcMeta,
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "pipeline-run-pvc-",
+			Name: "pipeline-run-pvc-testing",
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			StorageClassName: strPtr("manual"),

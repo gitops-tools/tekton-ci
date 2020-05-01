@@ -58,5 +58,11 @@ spec:
   serviceAccountName: testing
   workspaces:
   - name: git-checkout
-    persistentVolumeClaim:
-      claimName: my-volume-claim-123
+    volumeClaimTemplate:
+      metadata:
+        name: ws-pvc
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+           requests:
+              storage: 1G

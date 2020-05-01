@@ -43,12 +43,12 @@ func AnnotateSource(evtID string, src *Source) func(*pipelinev1.PipelineRun) {
 // Convert takes a Pipeline definition, a name, source and volume claim name,
 // and generates a TektonCD PipelineRun with an embedded Pipeline with the
 // tasks to execute.
-func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Source, volumeClaimName string, ctx *cel.Context, id string) (*pipelinev1.PipelineRun, error) {
+func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Source, ctx *cel.Context, id string) (*pipelinev1.PipelineRun, error) {
 	env := makeEnv(p.Variables)
 	tasks := []pipelinev1.PipelineTask{
 		makeGitCloneTask(env, src),
 	}
-	logMeta := []interface{}{"volumeClaimName", volumeClaimName, "ref", src.Ref, "repoURL", src.RepoURL}
+	logMeta := []interface{}{"ref", src.Ref, "repoURL", src.RepoURL}
 	log.Infow("converting pipeline", logMeta...)
 	previous := []string{gitCloneTaskName}
 	if len(p.BeforeScript) > 0 {
@@ -91,14 +91,13 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 	if len(p.AfterScript) > 0 {
 		tasks = append(tasks, makeScriptTask(afterStepTaskName, previous, env, p.Image, p.AfterScript))
 	}
+	volTemplate := makeVolumeClaimTemplate(config.VolumeSize)
 	spec := pipelinev1.PipelineRunSpec{
 		ServiceAccountName: config.DefaultServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			{
-				Name: workspaceName,
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: volumeClaimName,
-				},
+				Name:                workspaceName,
+				VolumeClaimTemplate: volTemplate,
 			},
 		},
 		PipelineSpec: &pipelinev1.PipelineSpec{

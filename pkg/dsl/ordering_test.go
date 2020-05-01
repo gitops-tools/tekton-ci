@@ -83,7 +83,7 @@ func TestTaskOrdering(t *testing.T) {
 			logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 			p := makeOrderingPipeline(tt.before, tt.after, tt.stages, tt.tasks)
 			src := &Source{RepoURL: testRepoURL, Ref: "master"}
-			pr, err := Convert(p, logger.Sugar(), testConfiguration(), src, "test-volume", nil, "abc123")
+			pr, err := Convert(p, logger.Sugar(), testConfiguration(), src, nil, "abc123")
 			if err != nil {
 				t.Fatal(err)
 			}
