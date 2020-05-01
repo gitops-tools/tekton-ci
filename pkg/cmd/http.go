@@ -129,7 +129,7 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 	cmd.Flags().String(
 		"archiver-image",
 		"",
-		"image to execute for archiving artifacts",
+		"image to execute for archiving artifacts in generated PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("archiver-image", cmd.Flags().Lookup("archiver-image")))
 	logIfError(cmd.MarkFlagRequired("archiver-image"))
@@ -152,14 +152,14 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 	cmd.Flags().String(
 		"pipelinerun-serviceaccount-name",
 		"default",
-		"used for the generateName in the generated PipelineRuns",
+		"used as the default service account for generated PipelineRuns in the dsl",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-serviceaccount-name", cmd.Flags().Lookup("pipelinerun-serviceaccount-name")))
 
 	cmd.Flags().String(
 		"pipelinerun-volume-size",
 		defaultVolumeSize,
-		"the size of the volume to create for pipeline runs",
+		"the size of the volume to create for PipelineRuns",
 	)
 	logIfError(viper.BindPFlag("pipelinerun-volume-size", cmd.Flags().Lookup("pipelinerun-volume-size")))
 
