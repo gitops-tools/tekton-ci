@@ -231,7 +231,7 @@ func makeEnv(m map[string]string) []corev1.EnvVar {
 	return vars
 }
 
-func container(name, image string, command string, args []string, env []corev1.EnvVar, workDir string) corev1.Container {
+func container(name, image, command string, args []string, env []corev1.EnvVar, workDir string) corev1.Container {
 	c := corev1.Container{
 		Name:       name,
 		Image:      image,
