@@ -19,7 +19,7 @@ spec:
           image: quay.io/bigkevmcd/tekton-ci
           imagePullPolicy: Always
           command: ["./tekton-ci"]
-          args: ["http", "--archiver-image", "quay.io/bigkevmcd/mock-archiver", "--archive-url", "https://example.com/testing"]
+          args: ["http", "--archiver-image", "quay.io/bigkevmcd/mock-archiver", "--archive-url", "https://example.com/testing", "--commit-statuses"]
           env:
             - name: GITHUB_TOKEN
               valueFrom:
