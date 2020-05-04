@@ -94,7 +94,7 @@ func TestParseWebhookWithInvalidSignature(t *testing.T) {
 
 func TestCreateStatus(t *testing.T) {
 	m := metrics.NewMock()
-	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e", "master", "testdata/content.json")
+	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e", "", "testdata/commit_status.json")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
@@ -116,29 +116,38 @@ func TestCreateStatus(t *testing.T) {
 	}
 }
 
-// func TestCreateStatusWithNotFoundResponse(t *testing.T) {
-// 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "master", "")
-// 	defer as.Close()
-// 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	client := New(scmClient, nil, metrics.NewMock())
+func TestCreateStatusWithNotFoundResponse(t *testing.T) {
+	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e", "", "")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := New(scmClient, nil, metrics.NewMock())
 
-// 	_, err = client.CreateStatus(context.TODO(), "Codertocat/Hello-World", ".tekton_ci.yaml", "master")
-// 	if !IsNotFound(err) {
-// 		t.Fatal(err)
-// 	}
-// }
+	status := &scm.StatusInput{
+		State: scm.StatePending,
+		Label: "testing",
+		Desc:  "Tekton CI Status",
+	}
+	err = client.CreateStatus(context.TODO(), "Codertocat/Hello-World", "6dcb09b5b57875f334f61aebed695e2e4193db5e", status)
+
+	if !IsNotFound(err) {
+		t.Fatal(err)
+	}
+}
 
 func makeAPIServer(t *testing.T, urlPath, ref, fixture string) *httptest.Server {
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Helper()
 		if r.URL.Path != urlPath {
 			http.NotFound(w, r)
 			t.Fatalf("request path got %s, want %s", r.URL.Path, urlPath)
 		}
-		if queryRef := r.URL.Query().Get("ref"); queryRef != ref {
-			t.Fatalf("failed to match ref, got %s, want %s", queryRef, ref)
+		if ref != "" {
+			if queryRef := r.URL.Query().Get("ref"); queryRef != ref {
+				t.Fatalf("failed to match ref, got %s, want %s", queryRef, ref)
+			}
 		}
 		if fixture == "" {
 			http.NotFound(w, r)

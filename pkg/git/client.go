@@ -53,7 +53,11 @@ func (c *SCMClient) FileContents(ctx context.Context, repo, path, ref string) ([
 // If an HTTP error is returned by the upstream service, an error with the
 // response status code is returned.
 func (c *SCMClient) CreateStatus(ctx context.Context, repo, commit string, s *scm.StatusInput) error {
-	_, _, err := c.client.Repositories.CreateStatus(ctx, repo, commit, s)
+	c.m.CountAPICall("create_status")
+	_, r, err := c.client.Repositories.CreateStatus(ctx, repo, commit, s)
+	if isErrorStatus(r.Status) {
+		return scmError{msg: fmt.Sprintf("failed to create commitstatus in repo %s commit %s", repo, commit), Status: r.Status}
+	}
 	return err
 }
 

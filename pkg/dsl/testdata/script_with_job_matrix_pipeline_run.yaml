@@ -2,8 +2,6 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   annotations:
-    tekton.dev/git-status: "true"
-    tekton.dev/status-context: tekton-ci
     tekton.dev/ci-source-ref: refs/pulls/4
     tekton.dev/ci-source-url: https://github.com/bigkevmcd/github-tool.git
     tekton.dev/ci-hook-id: "26400635-d8f4-4cf5-a45f-bd03856bdf2b"

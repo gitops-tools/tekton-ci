@@ -367,11 +367,9 @@ func TestAnnotateSource(t *testing.T) {
 	pr := resources.PipelineRun("dsl", "test-", pipelinev1.PipelineRunSpec{}, AnnotateSource(testEvtID, src))
 
 	want := map[string]string{
-		"tekton.dev/git-status":     "true",
-		"tekton.dev/status-context": "tekton-ci",
-		"tekton.dev/ci-source-url":  cloneURL,
-		"tekton.dev/ci-source-ref":  ref,
-		"tekton.dev/ci-hook-id":     testEvtID,
+		"tekton.dev/ci-source-url": cloneURL,
+		"tekton.dev/ci-source-ref": ref,
+		"tekton.dev/ci-hook-id":    testEvtID,
 	}
 	if diff := cmp.Diff(want, pr.ObjectMeta.Annotations); diff != "" {
 		t.Fatalf("Source() failed: %s\n", diff)

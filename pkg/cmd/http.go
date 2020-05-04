@@ -38,25 +38,29 @@ func makeHTTPCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "http",
 		Short: "execute PipelineRuns in response to hooks",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			scmClient, err := factory.NewClient(viper.GetString("driver"), "", githubToken())
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to create a git driver: %s", err)
 			}
 
 			clusterConfig, err := rest.InClusterConfig()
 			if err != nil {
-				log.Fatalf("failed to create in-cluster config: %v", err)
+				return fmt.Errorf("failed to create a cluster config: %s", err)
+			}
+
+			if err != nil {
+				return fmt.Errorf("failed to create in-cluster config: %v", err)
 			}
 
 			tektonClient, err := pipelineclientset.NewForConfig(clusterConfig)
 			if err != nil {
-				log.Fatalf("failed to create the tekton client: %v", err)
+				return fmt.Errorf("failed to create the tekton client: %v", err)
 			}
 
 			coreClient, err := kubernetes.NewForConfig(clusterConfig)
 			if err != nil {
-				log.Fatalf("failed to create the core client: %v", err)
+				return fmt.Errorf("failed to create the core client: %v", err)
 			}
 
 			logger, _ := zap.NewProduction()
@@ -71,7 +75,9 @@ func makeHTTPCmd() *cobra.Command {
 			met := metrics.New("dsl", nil)
 			namespace := viper.GetString("namespace")
 			gitClient := git.New(scmClient, secrets.New(namespace, secrets.DefaultName, coreClient), met)
-			go watcher.WatchPipelineRuns(stopper(), scmClient, tektonClient, namespace, sugar)
+			if viper.GetBool("commit-statuses") {
+				go watcher.WatchPipelineRuns(stopper(), scmClient, tektonClient, namespace, sugar)
+			}
 			dslHandler := dsl.New(
 				gitClient,
 				tektonClient,
@@ -89,7 +95,7 @@ func makeHTTPCmd() *cobra.Command {
 			http.Handle("/pipelinerun", specHandler)
 			http.Handle("/metrics", promhttp.Handler())
 			listen := fmt.Sprintf(":%d", viper.GetInt("port"))
-			log.Fatal(http.ListenAndServe(listen, nil))
+			return http.ListenAndServe(listen, nil)
 		},
 	}
 
@@ -99,6 +105,13 @@ func makeHTTPCmd() *cobra.Command {
 		"port to serve requests on",
 	)
 	logIfError(viper.BindPFlag("port", cmd.Flags().Lookup("port")))
+
+	cmd.Flags().Bool(
+		"commit-statuses",
+		false,
+		"if true, will attempt to send commit-status updates to your Git host",
+	)
+	logIfError(viper.BindPFlag("commit-statuses", cmd.Flags().Lookup("commit-statuses")))
 
 	cmd.Flags().String(
 		"driver",

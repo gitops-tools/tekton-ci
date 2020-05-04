@@ -17,8 +17,8 @@ func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, opti
 		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: prName,
-			Annotations:  annotations(),
 			Labels:       labels(component),
+			Annotations:  map[string]string{},
 		},
 		Spec: spec,
 	}
@@ -27,13 +27,6 @@ func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, opti
 		o(pr)
 	}
 	return pr
-}
-
-func annotations() map[string]string {
-	return map[string]string{
-		"tekton.dev/git-status":     "true",
-		"tekton.dev/status-context": "tekton-ci",
-	}
 }
 
 func labels(component string) map[string]string {

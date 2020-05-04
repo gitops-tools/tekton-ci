@@ -16,9 +16,9 @@ spec:
       serviceAccountName: tekton-ci
       containers:
         - name: tekton-ci-http
-          image: quay.io/bigkevmcd/alpha-tekton-ci
+          image: quay.io/bigkevmcd/tekton-ci
           imagePullPolicy: Always
-          command: ["./ci-hook-server"]
+          command: ["./tekton-ci"]
           args: ["http", "--archiver-image", "quay.io/bigkevmcd/mock-archiver", "--archive-url", "https://example.com/testing"]
           env:
             - name: GITHUB_TOKEN
