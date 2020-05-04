@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -20,21 +21,23 @@ const (
 	notificationStateAnnotation = "tekton.dev/ci-notification-state"
 )
 
-func WatchPipelineRuns(scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) error {
-	l.Infow("starting to watch for pipelineruns", "ns", ns)
+func WatchPipelineRuns(stop chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) error {
+	l.Infow("starting to watch for PipelineRuns", "ns", ns)
 	api := tektonClient.TektonV1beta1().PipelineRuns(ns)
 	listOptions := metav1.ListOptions{
 		LabelSelector: labelsv1.Set(map[string]string{"app.kubernetes.io/part-of": "Tekton-CI"}).AsSelector().String(),
 	}
 	watcher, err := api.Watch(listOptions)
 	if err != nil {
-		l.Errorf("failed to watch pipelineruns: %s\n", err)
+		l.Errorf("failed to watch PipelineRuns: %s", err)
 		return err
 	}
 	ch := watcher.ResultChan()
 
 	for {
 		select {
+		case <-stop:
+			return nil
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
 			err := handlePipelineRun(scmClient, tektonClient, pr, l)
@@ -54,6 +57,10 @@ func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Int
 			return fmt.Errorf("failed to send notification %w", err)
 		}
 	}
+	return updatePRState(newState, pr, tektonClient)
+}
+
+func updatePRState(newState State, pr *pipelinev1.PipelineRun, tektonClient pipelineclientset.Interface) error {
 	setNotificationState(pr, newState)
 	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(pr)
 	return err
@@ -72,9 +79,11 @@ func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger
 	if err != nil {
 		return err
 	}
-	// TODO: this should check for empty
 	status := commitStatusInput(pr)
 	commit := findCommit(pr)
+	if commit == "" {
+		return errors.New("could not find a commit-id in the PipelineRun")
+	}
 
 	l.Infof("sendNotification", "repo", repo, "status", status, "commit", commit)
 	s, _, err := c.Repositories.CreateStatus(context.Background(), repo, commit, status)

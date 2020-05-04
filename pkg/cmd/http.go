@@ -71,7 +71,7 @@ func makeHTTPCmd() *cobra.Command {
 			met := metrics.New("dsl", nil)
 			namespace := viper.GetString("namespace")
 			gitClient := git.New(scmClient, secrets.New(namespace, secrets.DefaultName, coreClient), met)
-			go watcher.WatchPipelineRuns(scmClient, tektonClient, namespace, sugar)
+			go watcher.WatchPipelineRuns(stopper(), scmClient, tektonClient, namespace, sugar)
 			dslHandler := dsl.New(
 				gitClient,
 				tektonClient,
