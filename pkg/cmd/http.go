@@ -5,7 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -167,4 +170,20 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 
 func githubToken() string {
 	return os.Getenv("GITHUB_TOKEN")
+}
+
+// stopper returns a channel that remains open until an interrupt is received.
+func stopper() chan struct{} {
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		logrus.Warn("Interrupt received, attempting clean shutdown...")
+		close(stop)
+		<-c
+		logrus.Error("Second interrupt received, force exiting...")
+		os.Exit(1)
+	}()
+	return stop
 }
