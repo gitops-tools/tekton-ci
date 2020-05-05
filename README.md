@@ -229,7 +229,6 @@ $ go test -v ./...
 
 In no particular order.
 
- * Integration of the GitHub status notifications.
  * Switch to the new volumeClaimTemplate
    https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
  * Metrics.
@@ -242,11 +241,11 @@ In no particular order.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
    tasks.
- * Switch to the new volumeClaimTemplate https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
  * Watch for ending runs and delete the volume mount - this is tricky without
    deleting the pipelinerun that is using it too. (volumeClaimTemplate will
    solve this).
  * Maintain a queryable database of test-runs, with metrics.
+ * ~~Integration of the GitHub status notifications.~~
  * ~~Configurability of volume creation.~~
  * ~~Support private Git repositories.~~
  * ~~Provide the hook ID as an "execution ID" to improve traceability.~~
