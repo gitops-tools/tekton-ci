@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 
+	"github.com/bigkevmcd/tekton-ci/pkg/cel"
 	"github.com/bigkevmcd/tekton-ci/pkg/ci"
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 )
@@ -31,13 +32,14 @@ func makeConvertCmd() *cobra.Command {
 			source := &dsl.Source{RepoURL: viper.GetString("repository-url"), Ref: viper.GetString("branch")}
 
 			logger, _ := zap.NewProduction()
-			defer func() {
-				err := logger.Sync() // flushes buffer, if any
-				logIfError(err)
-			}()
 			sugar := logger.Sugar()
 
-			converted, err := dsl.Convert(parsed, sugar, newDSLConfig(), source, "shared-task-storage", nil, "unique-id")
+			fakeHook := map[string]interface{}{}
+			ctx, err := cel.New(fakeHook)
+			if err != nil {
+				return err
+			}
+			converted, err := dsl.Convert(parsed, sugar, newDSLConfig(), source, "shared-task-storage", ctx, "unique-id")
 			if err != nil {
 				return err
 			}

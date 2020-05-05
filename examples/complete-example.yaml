@@ -32,7 +32,7 @@ lint:
     taskRef: lint-task
     params:
       - name: IMAGE_URL
-        expr: quay.io/testing/testing
+        expr: "'quay.io/testing/testing'"
 
 compile:
   stage: build
