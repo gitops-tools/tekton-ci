@@ -425,10 +425,10 @@ func readPipelineRunFixture(t *testing.T, filename string) *pipelinev1.PipelineR
 	if err != nil {
 		t.Fatalf("failed to read %s: %s", filename, err)
 	}
-	var pr pipelinev1.PipelineRun
+	var pr *pipelinev1.PipelineRun
 	err = yaml.Unmarshal(b, &pr)
 	if err != nil {
 		t.Fatalf("failed to unmarshal %s: %s", filename, err)
 	}
-	return &pr
+	return pr
 }

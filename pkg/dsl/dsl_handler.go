@@ -105,6 +105,9 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if pr == nil {
+		return
+	}
 	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)

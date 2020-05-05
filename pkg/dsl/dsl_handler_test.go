@@ -127,6 +127,34 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	}
 }
 
+func TestHandlePushEventNoMatchingRules(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "6113728f27ae82c7b1a177c8d03f9e96e0adf246", "testdata/content_match_only_master.json")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitClient := git.New(scmClient, secrets.NewMock(), metrics.NewMock())
+	fakeTektonClient := fakeclientset.NewSimpleClientset()
+	fakeClient := fake.NewSimpleClientset()
+	vc := volumes.New(fakeClient)
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	w := rec.Result()
+	if w.StatusCode != http.StatusOK {
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
+	}
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	if !errors.IsNotFound(err) {
+		t.Fatalf("pipelinerun was created with no matching rules")
+	}
+}
+
 func mustReadBody(t *testing.T, req *http.Response) []byte {
 	t.Helper()
 	b, err := ioutil.ReadAll(req.Body)

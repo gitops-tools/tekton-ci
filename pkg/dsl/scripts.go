@@ -91,6 +91,9 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 	if len(p.AfterScript) > 0 {
 		tasks = append(tasks, makeScriptTask(afterStepTaskName, previous, env, p.Image, p.AfterScript))
 	}
+	if len(tasks) == 1 {
+		return nil, nil
+	}
 	spec := pipelinev1.PipelineRunSpec{
 		ServiceAccountName: config.DefaultServiceAccountName,
 		Workspaces: []pipelinev1.WorkspaceBinding{
