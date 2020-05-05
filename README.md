@@ -135,7 +135,7 @@ test:
     - ./bin/golangci-lint run
     - go test -race ./...
   # This is an optional extension - you can configure a specific image for a
-  # task's script to execute in.
+  # task's script to execute in, this overrides the top-level image.
   tekton:
     image: my-test-image
 
