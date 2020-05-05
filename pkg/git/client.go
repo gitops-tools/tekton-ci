@@ -55,12 +55,16 @@ func (c *SCMClient) FileContents(ctx context.Context, repo, path, ref string) ([
 func (c *SCMClient) CreateStatus(ctx context.Context, repo, commit string, s *scm.StatusInput) error {
 	c.m.CountAPICall("create_status")
 	_, r, err := c.client.Repositories.CreateStatus(ctx, repo, commit, s)
-	if isErrorStatus(r.Status) {
+	errResponse := isErrorStatus(r.Status)
+	if errResponse || err != nil {
+		c.m.CountFailedAPICall("file_contents")
+	}
+	if errResponse {
 		return scmError{msg: fmt.Sprintf("failed to create commitstatus in repo %s commit %s", repo, commit), Status: r.Status}
 	}
 	return err
 }
 
 func isErrorStatus(i int) bool {
-	return i > 400
+	return i >= 400
 }

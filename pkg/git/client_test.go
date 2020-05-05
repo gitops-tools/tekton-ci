@@ -117,13 +117,14 @@ func TestCreateStatus(t *testing.T) {
 }
 
 func TestCreateStatusWithNotFoundResponse(t *testing.T) {
+	m := metrics.NewMock()
 	as := makeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/statuses/6dcb09b5b57875f334f61aebed695e2e4193db5e", "", "")
 	defer as.Close()
 	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := New(scmClient, nil, metrics.NewMock())
+	client := New(scmClient, nil, m)
 
 	status := &scm.StatusInput{
 		State: scm.StatePending,
@@ -134,6 +135,9 @@ func TestCreateStatusWithNotFoundResponse(t *testing.T) {
 
 	if !IsNotFound(err) {
 		t.Fatal(err)
+	}
+	if m.FailedAPICalls != 1 {
+		t.Fatalf("metrics count of failed API calls, got %d, want 1", m.FailedAPICalls)
 	}
 }
 

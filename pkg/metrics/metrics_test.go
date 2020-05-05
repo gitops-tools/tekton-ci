@@ -55,3 +55,17 @@ dsl_api_calls_total{kind="file_contents"} 1
 		t.Fatal(err)
 	}
 }
+
+func TestCountFailedAPICall(t *testing.T) {
+	m := New("dsl", prometheus.NewRegistry())
+	m.CountFailedAPICall("commit_status")
+
+	err := testutil.CollectAndCompare(m.failedAPICalls, strings.NewReader(`
+# HELP dsl_failed_api_calls_total Count of failed API Calls made
+# TYPE dsl_failed_api_calls_total counter
+dsl_failed_api_calls_total{kind="commit_status"} 1
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+}

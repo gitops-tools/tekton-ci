@@ -4,12 +4,15 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
-// MockMetrics is a value that provides a wrapper around Mock
-// metrics for counting events in the system.
+var _ Interface = (*MockMetrics)(nil)
+
+// MockMetrics is a type that provides a simple counter for metrics for test
+// purposes.
 type MockMetrics struct {
-	Hooks        int
-	InvalidHooks int
-	APICalls     int
+	Hooks          int
+	InvalidHooks   int
+	APICalls       int
+	FailedAPICalls int
 }
 
 // NewMock creates and returns a MockMetrics.
@@ -30,4 +33,9 @@ func (m *MockMetrics) CountInvalidHook() {
 // CountAPICall records outgoing API calls to upstream services.
 func (m *MockMetrics) CountAPICall(name string) {
 	m.APICalls++
+}
+
+// CountFailedAPICall records failed outgoing API calls to upstream services.
+func (m *MockMetrics) CountFailedAPICall(name string) {
+	m.FailedAPICalls++
 }
