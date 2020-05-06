@@ -231,7 +231,7 @@ In no particular order.
 
  * Switch to the new volumeClaimTemplate
    https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
- * Metrics.
+ * **MORE** Metrics.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
