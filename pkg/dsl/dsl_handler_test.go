@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
@@ -153,6 +154,59 @@ func TestHandlePushEventNoMatchingRules(t *testing.T) {
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created with no matching rules")
 	}
+}
+
+func TestHandlePushEventWithSkippableMessage(t *testing.T) {
+	as := test.MakeAPIServer(t, "/api/v3/repos/Codertocat/Hello-World/contents/.tekton_ci.yaml", "6113728f27ae82c7b1a177c8d03f9e96e0adf246", "")
+	defer as.Close()
+	scmClient, err := factory.NewClient("github", as.URL, "", factory.Client(as.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitClient := git.New(scmClient, secrets.NewMock(), metrics.NewMock())
+	fakeTektonClient := fakeclientset.NewSimpleClientset()
+	fakeClient := fake.NewSimpleClientset()
+	vc := volumes.New(fakeClient)
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push", func(b map[string]interface{}) {
+		b["head_commit"].(map[string]interface{})["message"] = "This is a [skip ci] commit"
+	})
+	rec := httptest.NewRecorder()
+
+	h.ServeHTTP(rec, req)
+
+	w := rec.Result()
+	if w.StatusCode != http.StatusOK {
+		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
+	}
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	if !errors.IsNotFound(err) {
+		t.Fatalf("pipelinerun was created when no pipeline definition exists")
+	}
+}
+
+func TestSkip(t *testing.T) {
+	skipTests := []struct {
+		message string
+		skip    bool
+	}{
+		{"this is a message\n", false},
+		{"this is [ci skip]a message\n", true},
+		{"this is [skip ci]a message\n", true},
+	}
+
+	for i, tt := range skipTests {
+		h := &scm.PushHook{
+			Commit: scm.Commit{
+				Message: tt.message,
+			},
+		}
+		if b := skip(h); b != tt.skip {
+			t.Errorf("%d failed, got %v, want %v", i, b, tt.skip)
+		}
+	}
+
 }
 
 func mustReadBody(t *testing.T, req *http.Response) []byte {

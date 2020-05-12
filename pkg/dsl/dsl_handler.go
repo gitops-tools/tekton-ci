@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -67,7 +68,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // TODO: detect deleted events and don't execute.
 func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWriter) {
 	repo := fmt.Sprintf("%s/%s", evt.Repo.Namespace, evt.Repo.Name)
-	h.log.Infow("processing push event", "repo", repo, "sha", evt.Commit.Sha)
+	logItems := []interface{}{"repo", repo, "sha", evt.Commit.Sha}
+	h.log.Infow("processing push event", logItems...)
 	content, err := h.scmClient.FileContents(ctx, repo, pipelineFilename, evt.Commit.Sha)
 	// This does not return an error if the pipeline definition can't be found.
 	if git.IsNotFound(err) {
@@ -80,6 +82,11 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if skip(evt) {
+		h.log.Infow("skipping pipeline conversion", logItems...)
+		return
+	}
+
 	celCtx, err := cel.New(evt)
 	if err != nil {
 		h.log.Errorf("error fetching pipeline file: %s", err)
@@ -135,4 +142,14 @@ func sourceFromPushEvent(p *scm.PushHook) *Source {
 		RepoURL: p.Repo.Clone,
 		Ref:     p.Commit.Sha,
 	}
+}
+
+func skip(p *scm.PushHook) bool {
+	matches := []string{"[ci skip]", "[skip ci]"}
+	for _, m := range matches {
+		if strings.Index(p.Commit.Message, m) >= 0 {
+			return true
+		}
+	}
+	return false
 }
