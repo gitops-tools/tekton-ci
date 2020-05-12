@@ -394,17 +394,6 @@ func testConfiguration() *Configuration {
 	}
 }
 
-func mergeStringMap(src, dst map[string]string) map[string]string {
-	newMap := map[string]string{}
-	for k, v := range dst {
-		newMap[k] = v
-	}
-	for k, v := range src {
-		newMap[k] = v
-	}
-	return newMap
-}
-
 func readPipelineFixture(t *testing.T, filename string) *ci.Pipeline {
 	t.Helper()
 	f, err := os.Open(filename)

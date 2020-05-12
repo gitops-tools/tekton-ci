@@ -32,7 +32,10 @@ func TestHandlePipelineRun(t *testing.T) {
 		taskResult())
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	statuses := data.Statuses[testSHA]
 	if l := len(statuses); l != 1 {
@@ -61,7 +64,10 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	statuses := data.Statuses[testSHA]
 	if l := len(statuses); l != 0 {
@@ -88,7 +94,10 @@ func TestHandlePipelineRunWithNewState(t *testing.T) {
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	statuses := data.Statuses[testSHA]
 	if l := len(statuses); l != 1 {

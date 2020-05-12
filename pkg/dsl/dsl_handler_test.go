@@ -124,7 +124,7 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	}
 	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
-		t.Fatalf("pipelinerun was created when no pipeline definition exists")
+		t.Fatal("pipelinerun was created when no pipeline definition exists")
 	}
 }
 
@@ -152,7 +152,7 @@ func TestHandlePushEventNoMatchingRules(t *testing.T) {
 	}
 	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
-		t.Fatalf("pipelinerun was created with no matching rules")
+		t.Fatal("pipelinerun was created with no matching rules")
 	}
 }
 
@@ -182,7 +182,7 @@ func TestHandlePushEventWithSkippableMessage(t *testing.T) {
 	}
 	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
-		t.Fatalf("pipelinerun was created when no pipeline definition exists")
+		t.Fatalf("pipelinerun was created when the message indicated a skip")
 	}
 }
 

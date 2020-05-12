@@ -21,7 +21,7 @@ const (
 	notificationStateAnnotation = "tekton.dev/ci-notification-state"
 )
 
-func WatchPipelineRuns(stop chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) error {
+func WatchPipelineRuns(stop chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) {
 	l.Infow("starting to watch for PipelineRuns", "ns", ns)
 	api := tektonClient.TektonV1beta1().PipelineRuns(ns)
 	listOptions := metav1.ListOptions{
@@ -30,14 +30,14 @@ func WatchPipelineRuns(stop chan struct{}, scmClient *scm.Client, tektonClient p
 	watcher, err := api.Watch(listOptions)
 	if err != nil {
 		l.Errorf("failed to watch PipelineRuns: %s", err)
-		return err
+		return
 	}
 	ch := watcher.ResultChan()
 
 	for {
 		select {
 		case <-stop:
-			return nil
+			return
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
 			err := handlePipelineRun(scmClient, tektonClient, pr, l)

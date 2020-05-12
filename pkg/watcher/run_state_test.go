@@ -11,11 +11,6 @@ import (
 	"github.com/bigkevmcd/tekton-ci/pkg/resources"
 )
 
-var (
-	testNamespace   = "test-namespace"
-	pipelineRunName = "test-pipeline-run"
-)
-
 func TestRunState(t *testing.T) {
 	statusTests := []struct {
 		conditionType   apis.ConditionType

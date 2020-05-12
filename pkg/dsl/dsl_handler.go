@@ -147,7 +147,7 @@ func sourceFromPushEvent(p *scm.PushHook) *Source {
 func skip(p *scm.PushHook) bool {
 	matches := []string{"[ci skip]", "[skip ci]"}
 	for _, m := range matches {
-		if strings.Index(p.Commit.Message, m) >= 0 {
+		if strings.Contains(p.Commit.Message, m) {
 			return true
 		}
 	}
