@@ -12,20 +12,20 @@ import (
 type State int
 
 const (
+	// Pending indicates that the PipelineRun is not yet complete.
 	Pending State = iota
+	// Failed indicates that at least one Task in the PipelineRun failed.
 	Failed
+	// Successful indicates that all Tasks in the PipelineRun completed
+	// successfully.
 	Successful
-	Error
-	Unknown
 )
 
 func (s State) String() string {
 	names := [...]string{
 		"Pending",
 		"Failed",
-		"Successful",
-		"Error",
-		"Unknown"}
+		"Successful"}
 	return names[s]
 }
 

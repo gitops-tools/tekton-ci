@@ -5,10 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -19,6 +16,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"knative.dev/pkg/signals"
 
 	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
 	"github.com/bigkevmcd/tekton-ci/pkg/git"
@@ -49,10 +47,6 @@ func makeHTTPCmd() *cobra.Command {
 				return fmt.Errorf("failed to create a cluster config: %s", err)
 			}
 
-			if err != nil {
-				return fmt.Errorf("failed to create in-cluster config: %v", err)
-			}
-
 			tektonClient, err := pipelineclientset.NewForConfig(clusterConfig)
 			if err != nil {
 				return fmt.Errorf("failed to create the tekton client: %v", err)
@@ -76,7 +70,7 @@ func makeHTTPCmd() *cobra.Command {
 			namespace := viper.GetString("namespace")
 			gitClient := git.New(scmClient, secrets.New(namespace, secrets.DefaultName, coreClient), met)
 			if viper.GetBool("commit-statuses") {
-				go watcher.WatchPipelineRuns(stopper(), scmClient, tektonClient, namespace, sugar)
+				go watcher.WatchPipelineRuns(signals.SetupSignalHandler(), scmClient, tektonClient, namespace, sugar)
 			}
 			dslHandler := dsl.New(
 				gitClient,
@@ -183,20 +177,4 @@ func bindConfigurationFlags(cmd *cobra.Command) {
 
 func githubToken() string {
 	return os.Getenv("GITHUB_TOKEN")
-}
-
-// stopper returns a channel that remains open until an interrupt is received.
-func stopper() chan struct{} {
-	stop := make(chan struct{})
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		logrus.Warn("Interrupt received, attempting clean shutdown...")
-		close(stop)
-		<-c
-		logrus.Error("Second interrupt received, force exiting...")
-		os.Exit(1)
-	}()
-	return stop
 }

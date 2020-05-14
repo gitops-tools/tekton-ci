@@ -32,6 +32,8 @@ type Source struct {
 	Ref     string
 }
 
+// AnnotateSource is a PipelineRun optionFunc which annodates the pipelinerun
+// with the provided event ID and source URL.
 func AnnotateSource(evtID string, src *Source) func(*pipelinev1.PipelineRun) {
 	return func(pr *pipelinev1.PipelineRun) {
 		pr.ObjectMeta.Annotations[ciSourceURLAnnotation] = src.RepoURL

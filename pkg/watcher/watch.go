@@ -21,7 +21,9 @@ const (
 	notificationStateAnnotation = "tekton.dev/ci-notification-state"
 )
 
-func WatchPipelineRuns(stop chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) {
+// WatchPipelineRuns tracks PipelineRuns with the correct label, and reports
+// their state as a commit-status to the upstream Git hosting service.
+func WatchPipelineRuns(stop <-chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) {
 	l.Infow("starting to watch for PipelineRuns", "ns", ns)
 	api := tektonClient.TektonV1beta1().PipelineRuns(ns)
 	listOptions := metav1.ListOptions{
