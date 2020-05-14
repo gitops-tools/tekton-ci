@@ -5,24 +5,46 @@
 
 This is pre-Beta release of this code.
 
-It can take a CI definition, similar to the GitLab CI definition, and execute the steps / tasks as a [TektonCD](https://github.com/tektoncd/pipeline) PipelineRun.
+This service takes CI/CD pipelines, similar to the GitLab CI definition, and converts them to execute as steps and tasks in a [TektonCD](https://github.com/tektoncd/pipeline) PipelineRun.
 
 It has two different bits:
 
- * A "pipeline definition" to PipelineRun converter.
  * An HTTP Server that handles Hook requests from GitHub (and go-scm supported
-   hosting services) by requesting pipeline files from the incoming repository, and processing them.
+   hosting services) by requesting pipeline files from the incoming repository, and converting them.
+ * A "pipeline definition" to PipelineRun converter.
 
 ## Table of contents
-1. [Building](#building)
-2. [Receiving GitHub hooks](#receiving-github-hooks)
-3. [DSL Hook Handler](#dsl-hook-handler)
-4. [Testing](#testing)
-5. [Things to do](#things-to-do)
+1. [Blog Posts](#blog-posts)
+2. [Building](#building)
+3. [Receiving GitHub hooks](#receiving-github-hooks)
+4. [DSL Hook Handler](#dsl-hook-handler)
+5. [Testing](#testing)
+6. [Things to do](#things-to-do)
+
+## Blog Posts
+
+I've written a series of blog posts on the evolution of this project.
+
+ * [Automated Hooks in Tekton](https://bigkevmcd.github.io/tekton/triggers/github/build/2020/04/06/automated-hooks.html)
+ * [Simplified Tekton](https://bigkevmcd.github.io/tekton/triggers/github/build/2020/04/16/simplified-tekton.html)
+ * [Test Parallelism with Tekton-CI](https://bigkevmcd.github.io/tekton/build/tests/2020/04/23/test-parallelism.html)
+ * [Tekton CI Update](https://bigkevmcd.github.io/tekton/ci/update/2020/04/29/tekton-ci-update.html)
+ * [Building Java from Scratch with Tekton-CI](https://bigkevmcd.github.io/java/to/tekton-ci/2020/04/30/building-java-from-scratch.html)
+ * [Archiving Java Artifacts](https://bigkevmcd.github.io/java/tekton-ci/artifacts/2020/05/01/archiving-artifacts-follow-up.html)
+ * [Bootstrapping PipelineRuns from scripts](https://bigkevmcd.github.io/tekton-ci/pipeline-run/conversion/2020/05/04/bootstrap-pipeline-run.html)
+ * [Commit-status tracking in Tekton-CI](https://bigkevmcd.github.io/tekton-ci/commit-status/tracking/2020/05/05/tekton-ci-commit-status.html)
+ * [More complex pipelines](https://bigkevmcd.github.io/tekton-ci/pipeline-run/conversion/2020/05/05/more-complex-pipeline-runs.html)
 
 ## Building
 
 A `Dockerfile` is provided for building a container image.
+
+Alternatively, you can build and run it locally as:
+
+```shell
+$ go build ./cmd/tekton-ci
+$ ./tekton-ci -h
+```
 
 ## Receiving GitHub hooks
 
@@ -84,12 +106,11 @@ NOTE: `/` are not allowed in Secret keys.
 $ kubectl create secret generic tekton-ci-hook-secrets --from-literal=bigkevmcd_tekton-ci=test-secret
 ```
 
-In this case, the secret in GitHub is `test-secret`, and incoming hooks will be validated against this.
+In this case, the secret in GitHub is `test-secret`, and incoming hooks for the `bigkevmcd/tekton-ci` repository will be validated against this.
 
 See https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually here for more.
 
-Any number of repos can be handled with the same secret, as long as there are
-keys for the repository.
+Any number of repos can be handled with the same secret, as long as there are keys for the repository.
 
 ## DSL Hook Handler
 
@@ -245,6 +266,7 @@ In no particular order.
    deleting the pipelinerun that is using it too. (volumeClaimTemplate will
    solve this).
  * Maintain a queryable database of test-runs, with metrics.
+ * ~~Way to skip test runs like [ci skip]~~
  * ~~Integration of the GitHub status notifications.~~
  * ~~Configurability of volume creation.~~
  * ~~Support private Git repositories.~~
