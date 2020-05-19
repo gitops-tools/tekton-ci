@@ -40,6 +40,8 @@ func parseRaw(raw map[string]interface{}) (*Pipeline, error) {
 		switch k {
 		case "image":
 			cfg.Image = v.(string)
+		case "cache":
+			cfg.Cache = parseCacheConfig(v)
 		case "variables":
 			cfg.Variables = stringMap(v)
 		case "before_script":
@@ -89,6 +91,21 @@ func parseTektonConfig(v interface{}) *TektonConfig {
 	for k, v := range v.(map[string]interface{}) {
 		if k == "serviceAccountName" {
 			t.ServiceAccountName = v.(string)
+		}
+	}
+	return t
+}
+
+func parseCacheConfig(v interface{}) *CacheConfig {
+	t := &CacheConfig{}
+	for k, v := range v.(map[string]interface{}) {
+		switch k {
+		case "key":
+			t.Key = v.(string)
+		case "policy":
+			t.Policy = v.(string)
+		case "paths":
+			t.Paths = stringSlice(v)
 		}
 	}
 	return t

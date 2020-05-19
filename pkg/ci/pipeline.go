@@ -3,12 +3,20 @@ package ci
 // Pipeline represents the parsed Pipeline.
 type Pipeline struct {
 	Image        string            `json:"image,omitempty"`
+	Cache        *CacheConfig      `json:"cache,omitempty"`
 	Variables    map[string]string `json:"variables,omitempty"`
 	BeforeScript []string          `json:"before_script,omitempty"`
 	AfterScript  []string          `json:"after_script,omitempty"`
 	Stages       []string          `json:"stages,omitempty"`
 	Tasks        []*Task           `json:"tasks,omitempty"`
 	TektonConfig *TektonConfig     `json:"tekton,omitempty"`
+}
+
+// CacheConfig represents the cache configuration for the Pipeline.
+type CacheConfig struct {
+	Key    string   `json:"key,omitempty"`
+	Paths  []string `json:"paths,omitempty"`
+	Policy string   `json:"policy,omitempty"`
 }
 
 // Task represents the parsed Task from the Pipeline.

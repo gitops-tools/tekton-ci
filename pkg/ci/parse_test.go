@@ -106,6 +106,21 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/simple-with-cache.yaml", &Pipeline{
+			Image: "golang:latest",
+			Cache: &CacheConfig{
+				Key:    "one-key-to-rule-them-all",
+				Policy: "pull-push",
+				Paths:  []string{"node_modules/", "public/", "vendor/"},
+			},
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				{Name: "format",
+					Stage:  DefaultStage,
+					Script: []string{`echo "testing"`},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {

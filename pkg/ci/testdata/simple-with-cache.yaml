@@ -2,6 +2,11 @@ image: golang:latest
 
 cache:
   key: one-key-to-rule-them-all
+  paths:
+    - node_modules/
+    - public/
+    - vendor/
+  policy: pull-push
 
 format:
   script:
