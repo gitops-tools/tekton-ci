@@ -9,4 +9,5 @@ import (
 // PersistentVolumeClaims with a a requisite size.
 type Creator interface {
 	Create(namespace string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error)
+	Get(namespace, name string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error)
 }
