@@ -1,0 +1,8 @@
+image: golang:latest
+
+cache:
+  key: one-key-to-rule-them-all
+
+format:
+  script:
+    - echo "testing"
