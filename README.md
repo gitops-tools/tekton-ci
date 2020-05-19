@@ -250,14 +250,14 @@ $ go test -v ./...
 
 In no particular order.
 
+ * Support for specifying a volume name, which should allow persistent
+   VolumeClaims.
  * Switch to the new volumeClaimTemplate
    https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#volumeclaimtemplate
  * **MORE** Metrics.
  * Better naming for the handlers (pipeline and pipelinerun are not
    descriptive).
  * Support more syntax items (extra containers, saving and restoring the cache)
- * Configuration for archiving - currently spawns an image with a URL, how to do
-   configuration for this?
  * Support for service-broker bindings.
  * Move away from the bespoke YAML definition to a more structured approach
    (easier to parse) - this might be required for better integration with Tekton
