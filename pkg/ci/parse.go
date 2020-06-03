@@ -112,6 +112,8 @@ func parseTask(name string, v interface{}) (*Task, error) {
 			t.Rules = parseRules(v)
 		case "artifacts":
 			t.Artifacts = parseArtifacts(v)
+		case "only":
+			t.Only = parseOnly(v)
 		}
 	}
 	if len(t.Script) == 0 && t.Tekton == nil {
@@ -134,6 +136,22 @@ func parseArtifacts(v interface{}) Artifacts {
 		}
 	}
 	return a
+}
+
+func parseOnly(v interface{}) []Only {
+	onlies := []Only{}
+	for _, only := range v.([]interface{}) {
+		newOnly := Only{}
+		for k, v := range only.(map[string]interface{}) {
+			if k == "paths" {
+				newOnly.Paths = stringSlice(v)
+			}
+		}
+		if len(newOnly.Paths) > 0 {
+			onlies = append(onlies, newOnly)
+		}
+	}
+	return onlies
 }
 
 func parseTektonTask(v interface{}) (*TektonTask, error) {

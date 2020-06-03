@@ -106,6 +106,19 @@ func TestParse(t *testing.T) {
 				},
 			},
 		}},
+		{"testdata/simple-with-only-clause.yaml", &Pipeline{
+			Image:  "alpine",
+			Stages: []string{DefaultStage},
+			Tasks: []*Task{
+				{Name: "format",
+					Stage:  DefaultStage,
+					Script: []string{`echo "testing"`},
+					Only: []Only{
+						{Paths: []string{"^src/.*"}},
+					},
+				},
+			},
+		}},
 	}
 
 	for _, tt := range parseTests {

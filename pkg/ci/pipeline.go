@@ -14,6 +14,7 @@ type Pipeline struct {
 // Task represents the parsed Task from the Pipeline.
 type Task struct {
 	Name      string      `json:"name"`
+	Only      []Only      `json:"only"`
 	Stage     string      `json:"stage,omitempty"`
 	Tekton    *TektonTask `json:"tekton,omitempty"`
 	Script    []string    `json:"script,omitempty"`
@@ -31,6 +32,11 @@ type Artifacts struct {
 type Rule struct {
 	If   string `json:"if"`
 	When string `json:"when"`
+}
+
+// Only represents a rule for matching on files that have changed in a commit.
+type Only struct {
+	Paths []string `json:"paths"`
 }
 
 // TektonTask is an extension for executing Tekton Tasks.

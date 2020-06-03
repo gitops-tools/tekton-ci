@@ -1,0 +1,9 @@
+image: alpine
+
+format:
+  only:
+    - paths:
+      - "^src/.*"
+
+  script:
+    - echo "testing"
