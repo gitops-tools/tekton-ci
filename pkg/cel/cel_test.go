@@ -8,7 +8,7 @@ import (
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/bigkevmcd/tekton-ci/test/hook"
+	"github.com/gitops-tools/tekton-ci/test/hook"
 )
 
 func TestExpressionEvaluation(t *testing.T) {

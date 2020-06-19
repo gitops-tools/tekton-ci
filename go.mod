@@ -1,4 +1,4 @@
-module github.com/bigkevmcd/tekton-ci
+module github.com/gitops-tools/tekton-ci
 
 go 1.14
 

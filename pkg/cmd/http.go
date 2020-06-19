@@ -18,13 +18,13 @@ import (
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"knative.dev/pkg/signals"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
-	"github.com/bigkevmcd/tekton-ci/pkg/spec"
-	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
-	"github.com/bigkevmcd/tekton-ci/pkg/watcher"
+	"github.com/gitops-tools/tekton-ci/pkg/dsl"
+	"github.com/gitops-tools/tekton-ci/pkg/git"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/secrets"
+	"github.com/gitops-tools/tekton-ci/pkg/spec"
+	"github.com/gitops-tools/tekton-ci/pkg/volumes"
+	"github.com/gitops-tools/tekton-ci/pkg/watcher"
 )
 
 const (

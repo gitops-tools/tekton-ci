@@ -7,8 +7,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/cel"
-	"github.com/bigkevmcd/tekton-ci/pkg/resources"
+	"github.com/gitops-tools/tekton-ci/pkg/cel"
+	"github.com/gitops-tools/tekton-ci/pkg/resources"
 )
 
 // Execute takes a PipelineDefinition and a hook, and returns a PipelineRun

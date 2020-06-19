@@ -7,10 +7,10 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/cel"
-	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/logger"
-	"github.com/bigkevmcd/tekton-ci/pkg/resources"
+	"github.com/gitops-tools/tekton-ci/pkg/cel"
+	"github.com/gitops-tools/tekton-ci/pkg/ci"
+	"github.com/gitops-tools/tekton-ci/pkg/logger"
+	"github.com/gitops-tools/tekton-ci/pkg/resources"
 )
 
 const (

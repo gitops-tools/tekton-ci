@@ -14,8 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
-	"github.com/bigkevmcd/tekton-ci/pkg/resources"
+	"github.com/gitops-tools/tekton-ci/pkg/dsl"
+	"github.com/gitops-tools/tekton-ci/pkg/resources"
 )
 
 const (

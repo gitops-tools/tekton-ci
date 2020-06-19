@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labelsv1 "k8s.io/apimachinery/pkg/labels"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/logger"
+	"github.com/gitops-tools/tekton-ci/pkg/logger"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"github.com/bigkevmcd/tekton-ci/test/hook"
+	"github.com/gitops-tools/tekton-ci/test/hook"
 )
 
 var _ Interface = (*PrometheusMetrics)(nil)

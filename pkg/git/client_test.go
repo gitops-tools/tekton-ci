@@ -12,10 +12,10 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
-	"github.com/bigkevmcd/tekton-ci/test"
-	"github.com/bigkevmcd/tekton-ci/test/secret"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/secrets"
+	"github.com/gitops-tools/tekton-ci/test"
+	"github.com/gitops-tools/tekton-ci/test/secret"
 )
 
 func TestFileContents(t *testing.T) {

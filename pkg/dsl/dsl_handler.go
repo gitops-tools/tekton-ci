@@ -11,12 +11,12 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/cel"
-	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
-	"github.com/bigkevmcd/tekton-ci/pkg/logger"
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
+	"github.com/gitops-tools/tekton-ci/pkg/cel"
+	"github.com/gitops-tools/tekton-ci/pkg/ci"
+	"github.com/gitops-tools/tekton-ci/pkg/git"
+	"github.com/gitops-tools/tekton-ci/pkg/logger"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/volumes"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 
-	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/gitops-tools/tekton-ci/test"
 )
 
 // MakeHookFromFixture creates and returns a WebHook parsed from the provided

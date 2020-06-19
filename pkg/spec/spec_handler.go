@@ -10,8 +10,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
-	"github.com/bigkevmcd/tekton-ci/pkg/logger"
+	"github.com/gitops-tools/tekton-ci/pkg/git"
+	"github.com/gitops-tools/tekton-ci/pkg/logger"
 )
 
 const (

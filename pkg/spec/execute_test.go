@@ -9,7 +9,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/resources"
+	"github.com/gitops-tools/tekton-ci/pkg/resources"
 )
 
 const (

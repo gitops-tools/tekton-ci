@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/ci"
+	"github.com/gitops-tools/tekton-ci/pkg/ci"
 )
 
 func TestTaskOrdering(t *testing.T) {

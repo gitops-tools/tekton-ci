@@ -13,10 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/cel"
-	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/resources"
-	"github.com/bigkevmcd/tekton-ci/test/hook"
+	"github.com/gitops-tools/tekton-ci/pkg/cel"
+	"github.com/gitops-tools/tekton-ci/pkg/ci"
+	"github.com/gitops-tools/tekton-ci/pkg/resources"
+	"github.com/gitops-tools/tekton-ci/test/hook"
 	"github.com/google/go-cmp/cmp"
 )
 

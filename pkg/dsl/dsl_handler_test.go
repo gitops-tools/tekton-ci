@@ -18,11 +18,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
-	"github.com/bigkevmcd/tekton-ci/pkg/volumes"
-	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/gitops-tools/tekton-ci/pkg/git"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/secrets"
+	"github.com/gitops-tools/tekton-ci/pkg/volumes"
+	"github.com/gitops-tools/tekton-ci/test"
 )
 
 const testNS = "testing"

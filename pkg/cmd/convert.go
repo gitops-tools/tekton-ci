@@ -9,9 +9,9 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/cel"
-	"github.com/bigkevmcd/tekton-ci/pkg/ci"
-	"github.com/bigkevmcd/tekton-ci/pkg/dsl"
+	"github.com/gitops-tools/tekton-ci/pkg/cel"
+	"github.com/gitops-tools/tekton-ci/pkg/ci"
+	"github.com/gitops-tools/tekton-ci/pkg/dsl"
 )
 
 func makeConvertCmd() *cobra.Command {

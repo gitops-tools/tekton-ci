@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/secrets"
 	"github.com/jenkins-x/go-scm/scm"
 )
 

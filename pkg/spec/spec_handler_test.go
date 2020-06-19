@@ -15,10 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/bigkevmcd/tekton-ci/pkg/git"
-	"github.com/bigkevmcd/tekton-ci/pkg/metrics"
-	"github.com/bigkevmcd/tekton-ci/pkg/secrets"
-	"github.com/bigkevmcd/tekton-ci/test"
+	"github.com/gitops-tools/tekton-ci/pkg/git"
+	"github.com/gitops-tools/tekton-ci/pkg/metrics"
+	"github.com/gitops-tools/tekton-ci/pkg/secrets"
+	"github.com/gitops-tools/tekton-ci/test"
 )
 
 const testNS = "testing"

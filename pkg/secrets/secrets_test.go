@@ -5,8 +5,8 @@ import (
 
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/bigkevmcd/tekton-ci/test/hook"
-	"github.com/bigkevmcd/tekton-ci/test/secret"
+	"github.com/gitops-tools/tekton-ci/test/hook"
+	"github.com/gitops-tools/tekton-ci/test/secret"
 )
 
 var _ SecretGetter = (*KubeSecretGetter)(nil)
