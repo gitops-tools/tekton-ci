@@ -89,8 +89,7 @@ func (h *Handler) push(ctx context.Context, evt *scm.PushHook, w http.ResponseWr
 
 	celCtx, err := cel.New(evt)
 	if err != nil {
-		h.log.Errorf("error fetching pipeline file: %s", err)
-		// TODO: should this return a 404?
+		h.log.Errorf("error creating a CEL context: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	parsed, err := ci.Parse(bytes.NewReader(content))
