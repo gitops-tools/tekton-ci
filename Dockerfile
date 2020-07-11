@@ -7,4 +7,4 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /root/
 COPY --from=build /go/src/tekton-ci .
 EXPOSE 8080
-CMD ["./tekton-ci"]
+ENTRYPOINT ["./tekton-ci"]
