@@ -72,14 +72,11 @@ func makeHTTPCmd() *cobra.Command {
 			if viper.GetBool("commit-statuses") {
 				go watcher.WatchPipelineRuns(signals.SetupSignalHandler(), scmClient, tektonClient, namespace, sugar)
 			}
-			dslHandler := dsl.New(
-				gitClient,
-				tektonClient,
-				volumes.New(coreClient),
-				met,
-				newDSLConfig(),
-				namespace,
-				sugar)
+
+			converter := dsl.NewDSLConverter(gitClient,
+				tektonClient, volumes.New(coreClient),
+				met, newDSLConfig(), namespace, sugar)
+			dslHandler := dsl.New(gitClient, sugar, met, converter)
 			specHandler := spec.New(
 				gitClient,
 				tektonClient,

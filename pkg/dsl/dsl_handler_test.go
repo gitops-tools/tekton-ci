@@ -40,7 +40,8 @@ func TestHandlePushEvent(t *testing.T) {
 	vc := volumes.New(fakeClient)
 	cfg := testConfiguration()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), cfg, testNS, logger.Sugar())
+	converter := NewDSLConverter(gitClient, fakeTektonClient, vc, metrics.NewMock(), cfg, testNS, logger.Sugar())
+	h := New(gitClient, logger.Sugar(), metrics.NewMock(), converter)
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -112,7 +113,9 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	converter := NewDSLConverter(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, logger.Sugar(), metrics.NewMock(), converter)
+
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -140,7 +143,8 @@ func TestHandlePushEventNoMatchingRules(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	converter := NewDSLConverter(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, logger.Sugar(), metrics.NewMock(), converter)
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push")
 	rec := httptest.NewRecorder()
 
@@ -168,7 +172,8 @@ func TestHandlePushEventWithSkippableMessage(t *testing.T) {
 	fakeClient := fake.NewSimpleClientset()
 	vc := volumes.New(fakeClient)
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-	h := New(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	converter := NewDSLConverter(gitClient, fakeTektonClient, vc, metrics.NewMock(), testConfiguration(), testNS, logger.Sugar())
+	h := New(gitClient, logger.Sugar(), metrics.NewMock(), converter)
 	req := test.MakeHookRequest(t, "../testdata/github_push.json", "push", func(b map[string]interface{}) {
 		b["head_commit"].(map[string]interface{})["message"] = "This is a [skip ci] commit"
 	})
