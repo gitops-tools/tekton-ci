@@ -1,6 +1,8 @@
 package volumes
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +37,7 @@ type SimpleVolumeCreator struct {
 }
 
 // Create impements the Creator interface.
-func (s SimpleVolumeCreator) Create(namespace string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error) {
+func (s SimpleVolumeCreator) Create(ctx context.Context, namespace string, size resource.Quantity) (*corev1.PersistentVolumeClaim, error) {
 	vc := &corev1.PersistentVolumeClaim{
 		TypeMeta: volumeTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,7 +55,9 @@ func (s SimpleVolumeCreator) Create(namespace string, size resource.Quantity) (*
 			},
 		},
 	}
-	volume, err := s.coreClient.CoreV1().PersistentVolumeClaims(namespace).Create(vc)
+	volume, err := s.coreClient.CoreV1().
+		PersistentVolumeClaims(namespace).
+		Create(ctx, vc, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -51,7 +52,7 @@ func TestHandlePushEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	claim, err := fakeClient.CoreV1().PersistentVolumeClaims(testNS).Get("", metav1.GetOptions{})
+	claim, err := fakeClient.CoreV1().PersistentVolumeClaims(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +78,8 @@ func TestHandlePushEvent(t *testing.T) {
 	if diff := cmp.Diff(wantClaim, claim, cmpopts.IgnoreFields(corev1.PersistentVolumeClaim{}, "TypeMeta")); diff != "" {
 		t.Fatalf("persistent volume claim incorrect, diff\n%s", diff)
 	}
-	pr, err := fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	pr, err := fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(
+		context.TODO(), "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +127,7 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatal("pipelinerun was created when no pipeline definition exists")
 	}
@@ -154,7 +156,7 @@ func TestHandlePushEventNoMatchingRules(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatal("pipelinerun was created with no matching rules")
 	}
@@ -185,7 +187,7 @@ func TestHandlePushEventWithSkippableMessage(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get("", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when the message indicated a skip")
 	}

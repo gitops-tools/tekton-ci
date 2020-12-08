@@ -216,14 +216,16 @@ func workspacePipelineTaskBindings() []pipelinev1.WorkspacePipelineTaskBinding {
 	}
 }
 
-func makeTaskSpec(steps ...pipelinev1.Step) *pipelinev1.TaskSpec {
-	return &pipelinev1.TaskSpec{
-		Workspaces: []pipelinev1.WorkspaceDeclaration{
-			{
-				Name: workspaceBindingName,
+func makeTaskSpec(steps ...pipelinev1.Step) *pipelinev1.EmbeddedTask {
+	return &pipelinev1.EmbeddedTask{
+		TaskSpec: pipelinev1.TaskSpec{
+			Workspaces: []pipelinev1.WorkspaceDeclaration{
+				{
+					Name: workspaceBindingName,
+				},
 			},
+			Steps: steps,
 		},
-		Steps: steps,
 	}
 }
 

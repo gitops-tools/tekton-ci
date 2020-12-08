@@ -11,6 +11,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gitops-tools/tekton-ci/pkg/cel"
 	"github.com/gitops-tools/tekton-ci/pkg/ci"
@@ -76,7 +77,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewDSLConverter creates and returns a converter.
-func NewDSLConverter(scmClient git.SCM, pipelineClient pipelineclientset.Interface, volumeCreator volumes.Creator, m metrics.Interface, cfg *Configuration, namespace string, l logger.Logger) *DSLConverter {
+func NewDSLConverter(
+	scmClient git.SCM,
+	pipelineClient pipelineclientset.Interface,
+	volumeCreator volumes.Creator,
+	m metrics.Interface, cfg *Configuration,
+	namespace string, l logger.Logger) *DSLConverter {
 	return &DSLConverter{
 		pipelineClient: pipelineClient,
 		volumeCreator:  volumeCreator,
@@ -129,7 +135,7 @@ func (d *DSLConverter) convert(ctx context.Context, evt *scm.PushHook) (*pipelin
 		return nil, nil
 	}
 
-	vc, err := d.volumeCreator.Create(d.namespace, d.config.VolumeSize)
+	vc, err := d.volumeCreator.Create(ctx, d.namespace, d.config.VolumeSize)
 	if err != nil {
 		d.log.Errorf("error creating volume: %s", err)
 		return nil, nil
@@ -142,7 +148,7 @@ func (d *DSLConverter) convert(ctx context.Context, evt *scm.PushHook) (*pipelin
 	if pr == nil {
 		return nil, nil
 	}
-	created, err := d.pipelineClient.TektonV1beta1().PipelineRuns(d.namespace).Create(pr)
+	created, err := d.pipelineClient.TektonV1beta1().PipelineRuns(d.namespace).Create(ctx, pr, metav1.CreateOptions{})
 	if err != nil {
 		d.log.Errorf("error creating pipelinerun file: %s", err)
 		return nil, nil

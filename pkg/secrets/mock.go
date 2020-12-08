@@ -1,6 +1,10 @@
 package secrets
 
-import "github.com/jenkins-x/go-scm/scm"
+import (
+	"context"
+
+	"github.com/jenkins-x/go-scm/scm"
+)
 
 // NewMock returns a simple secret getter that returns an empty secret token.
 //
@@ -14,6 +18,6 @@ func NewMock() MockSecret {
 type MockSecret struct{}
 
 // Secret implements the SecretGetter interface.
-func (k MockSecret) Secret(hook scm.Webhook) (string, error) {
+func (k MockSecret) Secret(ctx context.Context, hook scm.Webhook) (string, error) {
 	return "", nil
 }

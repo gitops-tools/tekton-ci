@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -31,8 +32,8 @@ func New(ns, n string, c kubernetes.Interface) *KubeSecretGetter {
 
 // Secret finds the secret to use to match against for the repo associated with
 // the provided hook, or returns an error.
-func (k KubeSecretGetter) Secret(hook scm.Webhook) (string, error) {
-	secret, err := k.coreClient.CoreV1().Secrets(k.namespace).Get(k.name, metav1.GetOptions{})
+func (k KubeSecretGetter) Secret(ctx context.Context, hook scm.Webhook) (string, error) {
+	secret, err := k.coreClient.CoreV1().Secrets(k.namespace).Get(ctx, k.name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gitops-tools/tekton-ci/pkg/git"
 	"github.com/gitops-tools/tekton-ci/pkg/logger"
@@ -93,7 +94,7 @@ func (h *Handler) handleEvent(ctx context.Context, repo, ref, filename string, e
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(pr)
+	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(ctx, pr, metav1.CreateOptions{})
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
