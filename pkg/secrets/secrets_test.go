@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"testing"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -16,7 +17,7 @@ func TestSecretForKnownRepository(t *testing.T) {
 	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	g := New("testing", "tekton-ci-auth", fakeClient)
 
-	secret, err := g.Secret(hook)
+	secret, err := g.Secret(context.TODO(), hook)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestSecretWithMissingSecret(t *testing.T) {
 	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	g := New("testing", "tekton-ci-auth", fakeClient)
 
-	_, err := g.Secret(hook)
+	_, err := g.Secret(context.TODO(), hook)
 	if err.Error() != `secrets "tekton-ci-auth" not found` {
 		t.Fatal(err)
 	}
@@ -42,7 +43,7 @@ func TestSecretForUnknownRepository(t *testing.T) {
 	hook := hook.MakeHookFromFixture(t, "../testdata/github_push.json", "push")
 	g := New("testing", "tekton-ci-auth", fakeClient)
 
-	_, err := g.Secret(hook)
+	_, err := g.Secret(context.TODO(), hook)
 	if err.Error() != "no secret for repository Codertocat/Hello-World, looked for Codertocat_Hello-World in tekton-ci-auth" {
 		t.Fatal(err)
 	}

@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,6 +25,7 @@ const (
 )
 
 func TestHandlePipelineRun(t *testing.T) {
+	ctx := context.TODO()
 	fakeSCM, data := fake.NewDefault()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
@@ -32,7 +34,7 @@ func TestHandlePipelineRun(t *testing.T) {
 		taskResult())
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(ctx, fakeSCM, fakeTektonClient, pr, logger.Sugar())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +47,9 @@ func TestHandlePipelineRun(t *testing.T) {
 		t.Fatalf("incorrect state notified, got %v, want %v", statuses[0].State, scm.StatePending)
 	}
 
-	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	loaded, err := fakeTektonClient.TektonV1beta1().
+		PipelineRuns(pr.ObjectMeta.Namespace).
+		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,6 +59,7 @@ func TestHandlePipelineRun(t *testing.T) {
 }
 
 func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
+	ctx := context.TODO()
 	fakeSCM, data := fake.NewDefault()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
@@ -64,7 +69,7 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(ctx, fakeSCM, fakeTektonClient, pr, logger.Sugar())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +78,9 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	if l := len(statuses); l != 0 {
 		t.Fatalf("incorrect number of statuses notifified, got %d, want 0", l)
 	}
-	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	loaded, err := fakeTektonClient.TektonV1beta1().
+		PipelineRuns(pr.ObjectMeta.Namespace).
+		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,6 +90,7 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 }
 
 func TestHandlePipelineRunWithNewState(t *testing.T) {
+	ctx := context.TODO()
 	fakeSCM, data := fake.NewDefault()
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 	pr := makePipelineRun(
@@ -94,7 +102,7 @@ func TestHandlePipelineRunWithNewState(t *testing.T) {
 	pr.ObjectMeta.Annotations[notificationStateAnnotation] = "Pending"
 	fakeTektonClient := fakeclientset.NewSimpleClientset(pr)
 
-	err := handlePipelineRun(fakeSCM, fakeTektonClient, pr, logger.Sugar())
+	err := handlePipelineRun(ctx, fakeSCM, fakeTektonClient, pr, logger.Sugar())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +111,9 @@ func TestHandlePipelineRunWithNewState(t *testing.T) {
 	if l := len(statuses); l != 1 {
 		t.Fatalf("incorrect number of statuses notifified, got %d, want 1", l)
 	}
-	loaded, err := fakeTektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Get(pr.ObjectMeta.Name, metav1.GetOptions{})
+	loaded, err := fakeTektonClient.TektonV1beta1().
+		PipelineRuns(pr.ObjectMeta.Namespace).
+		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

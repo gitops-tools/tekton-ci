@@ -25,7 +25,9 @@ type SCMClient struct {
 // ParseWebhookRequest parses an incoming hook request and returns a parsed
 // hook response if one can be matched.
 func (c *SCMClient) ParseWebhookRequest(req *http.Request) (scm.Webhook, error) {
-	hook, err := c.client.Webhooks.Parse(req, c.secrets.Secret)
+	hook, err := c.client.Webhooks.Parse(req, func(hook scm.Webhook) (string, error) {
+		return c.secrets.Secret(req.Context(), hook)
+	})
 	if err != nil {
 		return nil, err
 	}

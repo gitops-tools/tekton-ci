@@ -21,11 +21,13 @@ var testPipelineSpec = &pipelinev1.PipelineSpec{
 	Tasks: []pipelinev1.PipelineTask{
 		{
 			Name: "echo-commit-sha",
-			TaskSpec: &pipelinev1.TaskSpec{
-				Steps: []pipelinev1.Step{
-					{
-						Container: corev1.Container{Name: "echo", Image: "ubuntu"},
-						Script:    "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
+			TaskSpec: &pipelinev1.EmbeddedTask{
+				TaskSpec: pipelinev1.TaskSpec{
+					Steps: []pipelinev1.Step{
+						{
+							Container: corev1.Container{Name: "echo", Image: "ubuntu"},
+							Script:    "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
+						},
 					},
 				},
 			},

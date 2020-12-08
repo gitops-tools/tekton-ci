@@ -29,7 +29,8 @@ func WatchPipelineRuns(stop <-chan struct{}, scmClient *scm.Client, tektonClient
 	listOptions := metav1.ListOptions{
 		LabelSelector: labelsv1.Set(map[string]string{"app.kubernetes.io/part-of": "Tekton-CI"}).AsSelector().String(),
 	}
-	watcher, err := api.Watch(listOptions)
+	ctx := context.Background()
+	watcher, err := api.Watch(ctx, listOptions)
 	if err != nil {
 		l.Errorf("failed to watch PipelineRuns: %s", err)
 		return
@@ -42,7 +43,7 @@ func WatchPipelineRuns(stop <-chan struct{}, scmClient *scm.Client, tektonClient
 			return
 		case v := <-ch:
 			pr := v.Object.(*pipelinev1.PipelineRun)
-			err := handlePipelineRun(scmClient, tektonClient, pr, l)
+			err := handlePipelineRun(ctx, scmClient, tektonClient, pr, l)
 			if err != nil {
 				l.Infow(fmt.Sprintf("error handling PipelineRun: %s", err), "name", pr.ObjectMeta.Name)
 			}
@@ -50,7 +51,7 @@ func WatchPipelineRuns(stop <-chan struct{}, scmClient *scm.Client, tektonClient
 	}
 }
 
-func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Interface, pr *pipelinev1.PipelineRun, l logger.Logger) error {
+func handlePipelineRun(ctx context.Context, scmClient *scm.Client, tektonClient pipelineclientset.Interface, pr *pipelinev1.PipelineRun, l logger.Logger) error {
 	newState := runState(pr)
 	l.Infof("Received a PipelineRun %#v %s", pr.Status, newState)
 	if newState.String() != notificationState(pr) {
@@ -59,12 +60,12 @@ func handlePipelineRun(scmClient *scm.Client, tektonClient pipelineclientset.Int
 			return fmt.Errorf("failed to send notification %w", err)
 		}
 	}
-	return updatePRState(newState, pr, tektonClient)
+	return updatePRState(ctx, newState, pr, tektonClient)
 }
 
-func updatePRState(newState State, pr *pipelinev1.PipelineRun, tektonClient pipelineclientset.Interface) error {
+func updatePRState(ctx context.Context, newState State, pr *pipelinev1.PipelineRun, tektonClient pipelineclientset.Interface) error {
 	setNotificationState(pr, newState)
-	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(pr)
+	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(ctx, pr, metav1.UpdateOptions{})
 	return err
 }
 

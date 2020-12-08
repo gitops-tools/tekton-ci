@@ -1,6 +1,7 @@
 package volumes
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -13,10 +14,11 @@ import (
 var _ Creator = (*SimpleVolumeCreator)(nil)
 
 func TestSimpleVolume(t *testing.T) {
+	ctx := context.TODO()
 	fakeClient := fake.NewSimpleClientset()
 	c := New(fakeClient)
 	size := resource.MustParse("1Gi")
-	v, err := c.Create("testing", size)
+	v, err := c.Create(ctx, "testing", size)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +45,8 @@ func TestSimpleVolume(t *testing.T) {
 		t.Fatalf("new volume failed: %s\n", diff)
 	}
 
-	created, err := fakeClient.CoreV1().PersistentVolumeClaims("testing").Get("", metav1.GetOptions{})
+	created, err := fakeClient.CoreV1().PersistentVolumeClaims("testing").Get(
+		ctx, "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
