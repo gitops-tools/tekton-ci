@@ -161,7 +161,7 @@ test:
     image: my-test-image
 
 # This will execute the non-cluster Task "my-test-task".
-tekton-task
+tekton-task:
   stage: test
   tekton:
     taskRef: my-test-task
