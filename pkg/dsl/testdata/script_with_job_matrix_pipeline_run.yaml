@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -118,8 +118,9 @@ spec:
         workspace: git-checkout
     workspaces:
     - name: git-checkout
-  serviceAccountName: test-account
   workspaces:
   - name: git-checkout
     persistentVolumeClaim:
       claimName: my-volume-claim-123
+  taskRunTemplate:
+    serviceAccountName: test-account

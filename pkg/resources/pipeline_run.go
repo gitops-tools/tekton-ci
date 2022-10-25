@@ -3,7 +3,7 @@ package resources
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 // PipelineRunOpt is a type that can modify a PipelineRun after it's created,
@@ -14,7 +14,7 @@ type PipelineRunOpt func(*pipelinev1.PipelineRun)
 // provided Spec.
 func PipelineRun(component, prName string, spec pipelinev1.PipelineRunSpec, options ...PipelineRunOpt) *pipelinev1.PipelineRun {
 	pr := &pipelinev1.PipelineRun{
-		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "PipelineRun"},
+		TypeMeta: metav1.TypeMeta{APIVersion: "tekton.dev/v1", Kind: "PipelineRun"},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: prName,
 			Labels:       labels(component),

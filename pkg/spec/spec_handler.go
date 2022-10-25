@@ -94,7 +94,7 @@ func (h *Handler) handleEvent(ctx context.Context, repo, ref, filename string, e
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	created, err := h.pipelineClient.TektonV1beta1().PipelineRuns(h.namespace).Create(ctx, pr, metav1.CreateOptions{})
+	created, err := h.pipelineClient.TektonV1().PipelineRuns(h.namespace).Create(ctx, pr, metav1.CreateOptions{})
 	if err != nil {
 		h.log.Errorf("error creating pipelinerun file: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

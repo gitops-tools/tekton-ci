@@ -78,7 +78,7 @@ func TestHandlePushEvent(t *testing.T) {
 	if diff := cmp.Diff(wantClaim, claim, cmpopts.IgnoreFields(corev1.PersistentVolumeClaim{}, "TypeMeta")); diff != "" {
 		t.Fatalf("persistent volume claim incorrect, diff\n%s", diff)
 	}
-	pr, err := fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(
+	pr, err := fakeTektonClient.TektonV1().PipelineRuns(testNS).Get(
 		context.TODO(), "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func TestHandlePushEvent(t *testing.T) {
 		"-revision", "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
 		"-path", "$(workspaces.source.path)",
 	}
-	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Container.Command); diff != "" {
+	if diff := cmp.Diff(want, pr.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Command); diff != "" {
 		t.Fatalf("git command incorrect, diff\n%s", diff)
 	}
 	prUUID := pr.ObjectMeta.Annotations[ciHookIDAnnotation]
@@ -127,7 +127,7 @@ func TestHandlePushEventNoPipeline(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatal("pipelinerun was created when no pipeline definition exists")
 	}
@@ -156,7 +156,7 @@ func TestHandlePushEventNoMatchingRules(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatal("pipelinerun was created with no matching rules")
 	}
@@ -187,7 +187,7 @@ func TestHandlePushEventWithSkippableMessage(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeTektonClient.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
+	_, err = fakeTektonClient.TektonV1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when the message indicated a skip")
 	}

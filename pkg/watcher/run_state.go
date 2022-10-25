@@ -5,7 +5,7 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/jenkins-x/go-scm/scm"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 // State represents the state of a Pipeline.

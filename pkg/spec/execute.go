@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/cel-go/common/types"
 	"github.com/jenkins-x/go-scm/scm"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	"github.com/gitops-tools/tekton-ci/pkg/cel"
 	"github.com/gitops-tools/tekton-ci/pkg/resources"
@@ -43,6 +43,6 @@ func Execute(pd *PipelineDefinition, hook scm.Webhook, generateName string) (*pi
 	return resources.PipelineRun("pipelineRun", generateName, pd.PipelineRunSpec), nil
 }
 
-func valToString(v string) pipelinev1.ArrayOrString {
-	return pipelinev1.ArrayOrString{StringVal: v, Type: "string"}
+func valToString(v string) pipelinev1.ParamValue {
+	return pipelinev1.ParamValue{StringVal: v, Type: "string"}
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	corev1 "k8s.io/api/core/v1"
@@ -49,19 +49,17 @@ func TestMakeGitCloneTask(t *testing.T) {
 				},
 				Steps: []pipelinev1.Step{
 					{
-						Container: corev1.Container{
-							Name:    "git-clone",
-							Image:   "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init",
-							Command: []string{"/ko-app/git-init", "-url", testRepoURL, "-revision", "master", "-path", workspaceSourcePath},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "CI_PROJECT_DIR",
-									Value: "$(workspaces.source.path)",
-								},
-								{
-									Name:  "TEKTON_RESOURCE_NAME",
-									Value: "tekton-ci-git-clone",
-								},
+						Name:    "git-clone",
+						Image:   "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init",
+						Command: []string{"/ko-app/git-init", "-url", testRepoURL, "-revision", "master", "-path", workspaceSourcePath},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "CI_PROJECT_DIR",
+								Value: "$(workspaces.source.path)",
+							},
+							{
+								Name:  "TEKTON_RESOURCE_NAME",
+								Value: "tekton-ci-git-clone",
 							},
 						},
 					},
@@ -101,15 +99,9 @@ func TestMakeScriptTask(t *testing.T) {
 					},
 				},
 				Steps: []pipelinev1.Step{
-					{
-						Container: container("", "golang:latest", "sh", []string{"-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"}, env, workspaceSourcePath),
-					},
-					{
-						Container: container("", "golang:latest", "sh", []string{"-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
-					},
-					{
-						Container: container("", "golang:latest", "sh", []string{"-c", "cd $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
-					},
+					step("", "golang:latest", "sh", []string{"-c", "mkdir -p $GOPATH/src/$(dirname $REPO_NAME)"}, env, workspaceSourcePath),
+					step("", "golang:latest", "sh", []string{"-c", "ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
+					step("", "golang:latest", "sh", []string{"-c", "cd $GOPATH/src/$REPO_NAME"}, env, workspaceSourcePath),
 				},
 			},
 		},
@@ -171,7 +163,9 @@ func TestConvert(t *testing.T) {
 	testEnv := makeEnv(p.Variables)
 	// TODO flatten this test
 	want := resources.PipelineRun("dsl", "my-pipeline-run-", pipelinev1.PipelineRunSpec{
-		ServiceAccountName: testServiceAccountName,
+		TaskRunTemplate: pipelinev1.PipelineTaskRunTemplate{
+			ServiceAccountName: "test-account",
+		},
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			{
 				Name: "git-checkout",
@@ -190,31 +184,25 @@ func TestConvert(t *testing.T) {
 						TaskSpec: pipelinev1.TaskSpec{
 							Steps: []pipelinev1.Step{
 								{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh"},
-										Args:       []string{"-c", "go fmt $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
+									Image:      "golang:latest",
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go fmt $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
 								},
 								{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh"},
-										Args:       []string{"-c", "go vet $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
+									Image:      "golang:latest",
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go vet $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
 								},
 								{
-									Container: corev1.Container{
-										Image:      "golang:latest",
-										Command:    []string{"sh"},
-										Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
-										WorkingDir: "$(workspaces.source.path)",
-										Env:        testEnv,
-									},
+									Image:      "golang:latest",
+									Command:    []string{"sh"},
+									Args:       []string{"-c", "go test -race $(go list ./... | grep -v /vendor/)"},
+									WorkingDir: "$(workspaces.source.path)",
+									Env:        testEnv,
 								},
 							},
 							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
@@ -228,9 +216,7 @@ func TestConvert(t *testing.T) {
 					TaskSpec: &pipelinev1.EmbeddedTask{
 						TaskSpec: pipelinev1.TaskSpec{
 							Steps: []pipelinev1.Step{
-								{
-									Container: container("", "test-compile-image", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
-								},
+								step("", "test-compile-image", "sh", []string{"-c", `go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary`}, testEnv, workspaceSourcePath),
 							},
 							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
 						},
@@ -245,11 +231,9 @@ func TestConvert(t *testing.T) {
 					TaskSpec: &pipelinev1.EmbeddedTask{
 						TaskSpec: pipelinev1.TaskSpec{
 							Steps: []pipelinev1.Step{
-								{
-									Container: container("compile-archiver-archiver", testArchiverImage, "",
-										[]string{"archive", "--bucket-url",
-											testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
-								},
+								step("compile-archiver-archiver", testArchiverImage, "",
+									[]string{"archive", "--bucket-url",
+										testArchiveURL, "my-test-binary"}, testEnv, workspaceSourcePath),
 							},
 							Workspaces: []pipelinev1.WorkspaceDeclaration{{Name: "source"}},
 						},
@@ -300,8 +284,8 @@ func TestConvertFixtures(t *testing.T) {
 
 func TestContainer(t *testing.T) {
 	env := []corev1.EnvVar{{Name: "TEST_DIR", Value: "/tmp/test"}}
-	got := container("test-name", "test-image", "run", []string{"this"}, env, "/tmp/dir")
-	want := corev1.Container{
+	got := step("test-name", "test-image", "run", []string{"this"}, env, "/tmp/dir")
+	want := pipelinev1.Step{
 		Name:       "test-name",
 		Image:      "test-image",
 		Command:    []string{"run"},
@@ -311,7 +295,7 @@ func TestContainer(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("container doesn't match:\n%s", diff)
+		t.Fatalf("step doesn't match:\n%s", diff)
 	}
 }
 

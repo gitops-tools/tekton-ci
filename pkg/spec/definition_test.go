@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	corev1 "k8s.io/api/core/v1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 var testPipelineSpec = &pipelinev1.PipelineSpec{
@@ -25,8 +24,9 @@ var testPipelineSpec = &pipelinev1.PipelineSpec{
 				TaskSpec: pipelinev1.TaskSpec{
 					Steps: []pipelinev1.Step{
 						{
-							Container: corev1.Container{Name: "echo", Image: "ubuntu"},
-							Script:    "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
+							Name:   "echo",
+							Image:  "ubuntu",
+							Script: "#!/usr/bin/env bash\necho \"$(params.COMMIT_SHA)\"\n",
 						},
 					},
 				},

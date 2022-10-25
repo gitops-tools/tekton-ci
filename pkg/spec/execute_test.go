@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	"github.com/gitops-tools/tekton-ci/pkg/resources"
 )
@@ -36,7 +36,7 @@ func TestExecute(t *testing.T) {
 		Params: []pipelinev1.Param{
 			{
 				Name:  "COMMIT_SHA",
-				Value: pipelinev1.ArrayOrString{StringVal: testSHA, Type: "string"},
+				Value: pipelinev1.ParamValue{StringVal: testSHA, Type: "string"},
 			},
 		},
 		PipelineSpec: testPipelineSpec,

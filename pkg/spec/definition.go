@@ -5,7 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"sigs.k8s.io/yaml"
 )
 

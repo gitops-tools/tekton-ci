@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -44,7 +44,7 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
+	pr, err := fakeKube.TektonV1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestHandlePullRequestOpenedEvent(t *testing.T) {
 	want := []pipelinev1.Param{
 		{
 			Name: "COMMIT_SHA",
-			Value: pipelinev1.ArrayOrString{
+			Value: pipelinev1.ParamValue{
 				Type:      "string",
 				StringVal: "ec26c3e57ca3a959ca5aad62de7213c562f8c821",
 			},
@@ -87,7 +87,7 @@ func TestHandlePullRequestEventNoPipeline(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusOK, mustReadBody(t, w))
 	}
-	_, err = fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), defaultPipelineRunPrefix, metav1.GetOptions{})
+	_, err = fakeKube.TektonV1().PipelineRuns(testNS).Get(context.TODO(), defaultPipelineRunPrefix, metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		t.Fatalf("pipelinerun was created when no pipeline definition exists")
 	}
@@ -113,7 +113,7 @@ func TestHandlePushEvent(t *testing.T) {
 	if w.StatusCode != http.StatusOK {
 		t.Fatalf("got %d, want %d: %s", w.StatusCode, http.StatusNotFound, mustReadBody(t, w))
 	}
-	pr, err := fakeKube.TektonV1beta1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
+	pr, err := fakeKube.TektonV1().PipelineRuns(testNS).Get(context.TODO(), "", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestHandlePushEvent(t *testing.T) {
 	want := []pipelinev1.Param{
 		{
 			Name: "COMMIT_SHA",
-			Value: pipelinev1.ArrayOrString{
+			Value: pipelinev1.ParamValue{
 				Type:      "string",
 				StringVal: "6113728f27ae82c7b1a177c8d03f9e96e0adf246",
 			},

@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	fakeclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -47,7 +47,7 @@ func TestHandlePipelineRun(t *testing.T) {
 		t.Fatalf("incorrect state notified, got %v, want %v", statuses[0].State, scm.StatePending)
 	}
 
-	loaded, err := fakeTektonClient.TektonV1beta1().
+	loaded, err := fakeTektonClient.TektonV1().
 		PipelineRuns(pr.ObjectMeta.Namespace).
 		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
@@ -78,7 +78,7 @@ func TestHandlePipelineRunWithRepeatedState(t *testing.T) {
 	if l := len(statuses); l != 0 {
 		t.Fatalf("incorrect number of statuses notifified, got %d, want 0", l)
 	}
-	loaded, err := fakeTektonClient.TektonV1beta1().
+	loaded, err := fakeTektonClient.TektonV1().
 		PipelineRuns(pr.ObjectMeta.Namespace).
 		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
@@ -111,7 +111,7 @@ func TestHandlePipelineRunWithNewState(t *testing.T) {
 	if l := len(statuses); l != 1 {
 		t.Fatalf("incorrect number of statuses notifified, got %d, want 1", l)
 	}
-	loaded, err := fakeTektonClient.TektonV1beta1().
+	loaded, err := fakeTektonClient.TektonV1().
 		PipelineRuns(pr.ObjectMeta.Namespace).
 		Get(ctx, pr.ObjectMeta.Name, metav1.GetOptions{})
 	if err != nil {
@@ -193,19 +193,9 @@ func statusCondition(c apis.ConditionType, s corev1.ConditionStatus) resources.P
 
 func taskResult() resources.PipelineRunOpt {
 	return func(pr *pipelinev1.PipelineRun) {
-		pr.Status.PipelineRunStatusFields = pipelinev1.PipelineRunStatusFields{
-			TaskRuns: map[string]*pipelinev1.PipelineRunTaskRunStatus{
-				"testing": {
-					Status: &pipelinev1.TaskRunStatus{
-						TaskRunStatusFields: pipelinev1.TaskRunStatusFields{
-							ResourcesResult: []pipelinev1.PipelineResourceResult{
-								{Key: "commit", Value: testSHA},
-							},
-						},
-					},
-				},
-			},
-		}
+		ann := pr.GetAnnotations()
+		ann[dsl.CISourceRefAnnotation] = testSHA
+		pr.SetAnnotations(ann)
 	}
 }
 

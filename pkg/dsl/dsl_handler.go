@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -148,7 +148,7 @@ func (d *DSLConverter) convert(ctx context.Context, evt *scm.PushHook) (*pipelin
 	if pr == nil {
 		return nil, nil
 	}
-	created, err := d.pipelineClient.TektonV1beta1().PipelineRuns(d.namespace).Create(ctx, pr, metav1.CreateOptions{})
+	created, err := d.pipelineClient.TektonV1().PipelineRuns(d.namespace).Create(ctx, pr, metav1.CreateOptions{})
 	if err != nil {
 		d.log.Errorf("error creating pipelinerun file: %s", err)
 		return nil, nil

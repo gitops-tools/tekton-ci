@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/cel-go/common/types"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gitops-tools/tekton-ci/pkg/cel"
@@ -14,16 +14,21 @@ import (
 )
 
 const (
-	gitCloneTaskName      = "git-clone"
-	beforeStepTaskName    = "before-step"
-	afterStepTaskName     = "after-step"
-	workspaceName         = "git-checkout"
-	workspaceBindingName  = "source"
-	workspaceSourcePath   = "$(workspaces.source.path)"
-	ciHookIDAnnotation    = "tekton.dev/ci-hook-id"
-	ciSourceURLAnnotation = "tekton.dev/ci-source-url"
-	ciSourceRefAnnotation = "tekton.dev/ci-source-ref"
-	tektonGitInit         = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
+	gitCloneTaskName     = "git-clone"
+	beforeStepTaskName   = "before-step"
+	afterStepTaskName    = "after-step"
+	workspaceName        = "git-checkout"
+	workspaceBindingName = "source"
+	workspaceSourcePath  = "$(workspaces.source.path)"
+	tektonGitInit        = "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init"
+
+	// CIHookIDAnnotation contains the Hook ID from the incoming request.
+	CIHookIDAnnotation = "tekton.dev/ci-hook-id"
+	// CISourceURLAnnotation contains the source URL that was processed in a
+	// hook.
+	CISourceURLAnnotation = "tekton.dev/ci-source-url"
+	// CISourceREfAnnotation contains the ref that the hook was notifying about.
+	CISourceRefAnnotation = "tekton.dev/ci-source-ref"
 )
 
 // Source wraps a git clone URL and a specific ref to checkout.
@@ -36,9 +41,9 @@ type Source struct {
 // with the provided event ID and source URL.
 func AnnotateSource(evtID string, src *Source) func(*pipelinev1.PipelineRun) {
 	return func(pr *pipelinev1.PipelineRun) {
-		pr.ObjectMeta.Annotations[ciSourceURLAnnotation] = src.RepoURL
-		pr.ObjectMeta.Annotations[ciSourceRefAnnotation] = src.Ref
-		pr.ObjectMeta.Annotations[ciHookIDAnnotation] = evtID
+		pr.ObjectMeta.Annotations[CISourceURLAnnotation] = src.RepoURL
+		pr.ObjectMeta.Annotations[CISourceRefAnnotation] = src.Ref
+		pr.ObjectMeta.Annotations[CIHookIDAnnotation] = evtID
 	}
 }
 
@@ -97,7 +102,9 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 		return nil, nil
 	}
 	spec := pipelinev1.PipelineRunSpec{
-		ServiceAccountName: config.DefaultServiceAccountName,
+		TaskRunTemplate: pipelinev1.PipelineTaskRunTemplate{
+			ServiceAccountName: config.DefaultServiceAccountName,
+		},
 		Workspaces: []pipelinev1.WorkspaceBinding{
 			{
 				Name: workspaceName,
@@ -116,7 +123,7 @@ func Convert(p *ci.Pipeline, log logger.Logger, config *Configuration, src *Sour
 		},
 	}
 	if p.TektonConfig != nil {
-		spec.ServiceAccountName = p.TektonConfig.ServiceAccountName
+		spec.TaskRunTemplate.ServiceAccountName = p.TektonConfig.ServiceAccountName
 	}
 	return resources.PipelineRun("dsl", config.PipelineRunPrefix, spec, AnnotateSource(id, src)), nil
 }
@@ -162,12 +169,10 @@ func makeGitCloneTask(env []corev1.EnvVar, src *Source) pipelinev1.PipelineTask 
 		Workspaces: workspacePipelineTaskBindings(),
 		TaskSpec: makeTaskSpec(
 			pipelinev1.Step{
-				Container: corev1.Container{
-					Name:    "git-clone",
-					Image:   tektonGitInit,
-					Command: []string{"/ko-app/git-init", "-url", src.RepoURL, "-revision", src.Ref, "-path", workspaceSourcePath},
-					Env:     append(env, corev1.EnvVar{Name: "TEKTON_RESOURCE_NAME", Value: "tekton-ci-git-clone"}),
-				},
+				Name:    "git-clone",
+				Image:   tektonGitInit,
+				Command: []string{"/ko-app/git-init", "-url", src.RepoURL, "-revision", src.Ref, "-path", workspaceSourcePath},
+				Env:     append(env, corev1.EnvVar{Name: "TEKTON_RESOURCE_NAME", Value: "tekton-ci-git-clone"}),
 			},
 		),
 	}
@@ -188,11 +193,9 @@ func makeArchiveArtifactsTask(runAfter []string, name string, env []corev1.EnvVa
 		Workspaces: workspacePipelineTaskBindings(),
 		RunAfter:   runAfter,
 		TaskSpec: makeTaskSpec(
-			pipelinev1.Step{
-				Container: container(name+"-archiver", config.ArchiverImage, "",
-					append([]string{"archive", "--bucket-url", config.ArchiveURL}, artifacts...),
-					env, workspaceSourcePath),
-			},
+			step(name+"-archiver", config.ArchiverImage, "",
+				append([]string{"archive", "--bucket-url", config.ArchiveURL}, artifacts...),
+				env, workspaceSourcePath),
 		),
 	}
 }
@@ -200,9 +203,7 @@ func makeArchiveArtifactsTask(runAfter []string, name string, env []corev1.EnvVa
 func makeScriptSteps(env []corev1.EnvVar, image string, commands []string) []pipelinev1.Step {
 	steps := make([]pipelinev1.Step, len(commands))
 	for i, c := range commands {
-		steps[i] = pipelinev1.Step{
-			Container: container("", image, "sh", []string{"-c", c}, env, workspaceSourcePath),
-		}
+		steps[i] = step("", image, "sh", []string{"-c", c}, env, workspaceSourcePath)
 	}
 	return steps
 }
@@ -238,8 +239,8 @@ func makeEnv(m map[string]string) []corev1.EnvVar {
 	return vars
 }
 
-func container(name, image, command string, args []string, env []corev1.EnvVar, workDir string) corev1.Container {
-	c := corev1.Container{
+func step(name, image, command string, args []string, env []corev1.EnvVar, workDir string) pipelinev1.Step {
+	c := pipelinev1.Step{
 		Name:       name,
 		Image:      image,
 		Args:       args,
@@ -273,7 +274,7 @@ func paramsToParams(ctx *cel.Context, ciParams []ci.TektonTaskParam) ([]pipeline
 		if err != nil {
 			return nil, err
 		}
-		params = append(params, pipelinev1.Param{Name: c.Name, Value: pipelinev1.ArrayOrString{StringVal: v, Type: "string"}})
+		params = append(params, pipelinev1.Param{Name: c.Name, Value: pipelinev1.ParamValue{StringVal: v, Type: "string"}})
 	}
 	return params, nil
 }

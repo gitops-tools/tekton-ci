@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labelsv1 "k8s.io/apimachinery/pkg/labels"
 
+	"github.com/gitops-tools/tekton-ci/pkg/dsl"
 	"github.com/gitops-tools/tekton-ci/pkg/logger"
 )
 
@@ -25,7 +26,7 @@ const (
 // their state as a commit-status to the upstream Git hosting service.
 func WatchPipelineRuns(stop <-chan struct{}, scmClient *scm.Client, tektonClient pipelineclientset.Interface, ns string, l logger.Logger) {
 	l.Infow("starting to watch for PipelineRuns", "ns", ns)
-	api := tektonClient.TektonV1beta1().PipelineRuns(ns)
+	api := tektonClient.TektonV1().PipelineRuns(ns)
 	listOptions := metav1.ListOptions{
 		LabelSelector: labelsv1.Set(map[string]string{"app.kubernetes.io/part-of": "Tekton-CI"}).AsSelector().String(),
 	}
@@ -65,7 +66,7 @@ func handlePipelineRun(ctx context.Context, scmClient *scm.Client, tektonClient 
 
 func updatePRState(ctx context.Context, newState State, pr *pipelinev1.PipelineRun, tektonClient pipelineclientset.Interface) error {
 	setNotificationState(pr, newState)
-	_, err := tektonClient.TektonV1beta1().PipelineRuns(pr.ObjectMeta.Namespace).Update(ctx, pr, metav1.UpdateOptions{})
+	_, err := tektonClient.TektonV1().PipelineRuns(pr.ObjectMeta.Namespace).Update(ctx, pr, metav1.UpdateOptions{})
 	return err
 }
 
@@ -99,18 +100,11 @@ func sendNotification(c *scm.Client, pr *pipelinev1.PipelineRun, l logger.Logger
 }
 
 func findCommit(pr *pipelinev1.PipelineRun) string {
-	for _, tr := range pr.Status.TaskRuns {
-		for _, v := range tr.Status.ResourcesResult {
-			if v.Key == "commit" {
-				return v.Value
-			}
-		}
-	}
-	return ""
+	return pr.GetAnnotations()[dsl.CISourceRefAnnotation]
 }
 
 func findRepoURL(pr *pipelinev1.PipelineRun) string {
-	return pr.ObjectMeta.Annotations["tekton.dev/ci-source-url"]
+	return pr.GetAnnotations()[dsl.CISourceURLAnnotation]
 }
 
 func commitStatusInput(pr *pipelinev1.PipelineRun) *scm.StatusInput {
